@@ -82,6 +82,6 @@ struct apci_my_info
 
 static int probe(struct pci_dev *dev, const struct pci_device_id *id);
 static void remove(struct pci_dev *dev);
-void delete_drivers(void);
+void delete_drivers(struct pci_dev *dev);
 
 #endif

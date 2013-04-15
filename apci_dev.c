@@ -63,7 +63,7 @@ void *
 init_new_driver(struct pci_dev *dev, const struct pci_device_id *id ) 
 {
  
-        struct apci_my_info *ddata = kmalloc( sizeof( struct my_info ) , GFP_KERNEL );
+  struct apci_my_info *ddata = kmalloc( sizeof( struct apci_my_info ) , GFP_KERNEL );
         int count, plx_bar;
         struct resource *presource;
 
@@ -132,23 +132,32 @@ init_new_driver(struct pci_dev *dev, const struct pci_device_id *id )
 void 
 delete_drivers(struct pci_dev *dev)
 {
-        struct apci_my_info *tmp;
-        struct apci_device_info_structure *driver_data, *current_dev;
-
+        struct apci_my_info *ddata;
+        /* struct apci_device_info_structure *driver_data, *current_dev; */
+        int count;
         apci_debug("Emptying the list of drivers.\n");
 
-        if( driver_data == NULL ) 
-          return;
-
         while (  !list_empty( &head.driver_list ) ) {
-                tmp = list_entry( head.driver_list.next , 
-                                  struct apci_my_info, 
-                                  driver_list );
+                ddata = list_entry( head.driver_list.next , 
+                                    struct apci_my_info, 
+                                    driver_list );
 
-                release_regions( driver_data->plx_region.start, driver_data->plx_region.length );
+                release_region( ddata->plx_region.start, ddata->plx_region.length );
+
+                for (count = 0; count < 6; count ++) {
+                  if (ddata->regions[count].start == 0) {
+                    continue; /* invalid region */
+                  }
+                  if (ddata->regions[count].flags & IORESOURCE_IO) {
+                    release_region(ddata->regions[count].start, ddata->regions[count].length);
+                  } else {
+                    iounmap(ddata->regions[count].mapped_address);
+                    release_mem_region(ddata->regions[count].start, ddata->regions[count].length);
+                  }
+                }
 
                 list_del( head.driver_list.next );
-                kfree(tmp);
+                kfree(ddata);
         }
         apci_debug("Completed emptying list.\n");
 
