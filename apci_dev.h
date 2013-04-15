@@ -1,6 +1,14 @@
 #ifndef APCI_DEV_H
 #define APCI_DEV_H
 
+#include <linux/fs.h>
+#include <linux/cdev.h>
+#include <linux/types.h>
+#include <asm/uaccess.h>
+#include <linux/pci.h>
+
+
+
 /* The vendor ID for all the PCI cards this driver will support. */
 #define A_VENDOR_ID 0x494F
 
@@ -65,23 +73,24 @@ typedef struct
 
 struct apci_my_info
 {
-     __u32 dev_id;
-     io_region regions[6], plx_region;
-     int irq;
-     int irq_capable; /* is the card even able to generate irqs? */
-     int waiting_for_irq; /* boolean for if the user has requested an IRQ */
-     int irq_cancelled; /* boolean for if the user has cancelled the wait */
-     struct list_head driver_list;
-     spinlock_t list_lock;
-     wait_queue_head_t wait_queue;
-     spinlock_t irq_lock;
-     struct apci_device_info_structure *next;
+    __u32 dev_id;
+    io_region regions[6], plx_region;
+    int irq;
+    int irq_capable; /* is the card even able to generate irqs? */
+    int waiting_for_irq; /* boolean for if the user has requested an IRQ */
+    int irq_cancelled; /* boolean for if the user has cancelled the wait */
+    struct list_head driver_list;
+    spinlock_t list_lock;
+    wait_queue_head_t wait_queue;
+    spinlock_t irq_lock;
+    struct apci_device_info_structure *next;
+    struct cdev cdev;
 };
 
 
 
-static int probe(struct pci_dev *dev, const struct pci_device_id *id);
-static void remove(struct pci_dev *dev);
+int probe(struct pci_dev *dev, const struct pci_device_id *id);
+void remove(struct pci_dev *dev);
 void delete_drivers(struct pci_dev *dev);
 
 #endif

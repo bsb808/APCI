@@ -17,6 +17,6 @@
 #include "apci_common.h"
 
 ssize_t read_apci(struct file *f, char __user *buf, size_t len, loff_t *off);
-
+int open_apci( struct inode *inode, struct file *filp );
 
 #endif

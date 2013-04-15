@@ -38,7 +38,8 @@ static struct pci_driver pci_driver = {
 
 /* File Operations */
 static struct file_operations apci_fops = { 
-        .read = read_apci
+  .read = read_apci,
+  .open = open_apci
 };
 
 static const int NUM_DEVICES         = 4;
@@ -52,7 +53,7 @@ struct apci_my_info head;
 static int dev_counter = 0;
 
 
-static void remove(struct pci_dev *dev)
+void remove(struct pci_dev *dev)
 {
         apci_debug("entering remove");
 
@@ -138,7 +139,6 @@ void
 delete_drivers(struct pci_dev *dev)
 {
         struct apci_my_info *ddata;
-        /* struct apci_device_info_structure *driver_data, *current_dev; */
         int count;
         int i;
         apci_debug("Emptying the list of drivers.\n");
@@ -170,7 +170,6 @@ delete_drivers(struct pci_dev *dev)
         apci_debug("Removing device entries.\n");
 
         for( i = dev_counter ; i >= 0 ; i -- ) { 
-          /* sprintf(buf, "blah/foo_%d", i ); */
           device_destroy(class_apci, MKDEV(major_num, i));
         }
         
@@ -180,14 +179,16 @@ delete_drivers(struct pci_dev *dev)
 static void 
 apci_add_driver( struct apci_my_info *driver )
 {
-  char buf[30];
   list_add_tail( &driver->driver_list, &head.driver_list );
-  sprintf(buf, "blah/foo_%d", dev_counter++ );
-  device_create(class_apci, NULL , MKDEV(major_num, dev_counter-1), NULL, buf );
+  /* sprintf(buf, "blah/foo_%d", dev_counter++ ); */
+  /* cdev_init( ); */
+  /* cdev_add( ); */
+  device_create(class_apci, NULL , MKDEV(major_num, dev_counter), NULL, "blah/foo_%d", dev_counter );
+  dev_counter ++;
 }
 
 
-static int probe(struct pci_dev *dev, const struct pci_device_id *id)
+int probe(struct pci_dev *dev, const struct pci_device_id *id)
 {
   struct apci_my_info *ddata;
         apci_debug("entering probe");
@@ -224,6 +225,7 @@ apci_init(void)
 	if ((major_num = register_chrdev(0, APCI_CLASS_NAME , &apci_fops)) < 0)
 		return major_num;
         
+        /* Create the sysfs entry for this */
 	class_apci = class_create(THIS_MODULE, APCI_CLASS_NAME  );
 	if (IS_ERR(ptr_err = class_apci))
 		goto err;
