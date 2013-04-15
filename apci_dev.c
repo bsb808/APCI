@@ -46,7 +46,10 @@ static const char APCI_CLASS_NAME[]  = "apci";
 struct cdev apci_cdev;
 static int major_num;
 
+
+static struct class *class_apci;
 struct apci_my_info head;
+static int dev_counter = 0;
 
 
 static void remove(struct pci_dev *dev)
@@ -119,6 +122,8 @@ init_new_driver(struct pci_dev *dev, const struct pci_device_id *id )
           kfree(ddata);
           ddata = NULL;
         }
+        
+        
 
 
         return ddata;
@@ -135,6 +140,7 @@ delete_drivers(struct pci_dev *dev)
         struct apci_my_info *ddata;
         /* struct apci_device_info_structure *driver_data, *current_dev; */
         int count;
+        int i;
         apci_debug("Emptying the list of drivers.\n");
 
         while (  !list_empty( &head.driver_list ) ) {
@@ -161,24 +167,45 @@ delete_drivers(struct pci_dev *dev)
         }
         apci_debug("Completed emptying list.\n");
 
+        apci_debug("Removing device entries.\n");
+
+        for( i = dev_counter ; i >= 0 ; i -- ) { 
+          /* sprintf(buf, "blah/foo_%d", i ); */
+          device_destroy(class_apci, MKDEV(major_num, i));
+        }
+        
+        apci_debug("Completed removing device entries.\n");
+}
+
+static void 
+apci_add_driver( struct apci_my_info *driver )
+{
+  char buf[30];
+  list_add_tail( &driver->driver_list, &head.driver_list );
+  sprintf(buf, "blah/foo_%d", dev_counter++ );
+  device_create(class_apci, NULL , MKDEV(major_num, dev_counter-1), NULL, buf );
 }
 
 
 static int probe(struct pci_dev *dev, const struct pci_device_id *id)
 {
-        struct apci_my_info *driver_data;
+  struct apci_my_info *ddata;
         apci_debug("entering probe");
     
         if( pci_enable_device(dev) ) {
                 return -ENODEV;
         }
-        driver_data = (struct apci_my_info*) init_new_driver( dev, id  );
+        ddata = (struct apci_my_info*) init_new_driver( dev, id  );
 
-        if( driver_data == NULL ) {
+        if( ddata == NULL ) {
                 return -ENOMEM;
         }
         apci_debug("Adding driver to list");
-        list_add_tail( &driver_data->driver_list, &head.driver_list );
+
+        apci_add_driver( ddata );
+
+        pci_set_drvdata(dev, ddata );
+        
         apci_debug("Added driver to list");
         return 0;
 }
