@@ -143,6 +143,8 @@ delete_drivers(struct pci_dev *dev)
         int i;
         apci_debug("Emptying the list of drivers.\n");
 
+        /* cdev_del(&cmos_devp->cdev); */
+
         while (  !list_empty( &head.driver_list ) ) {
                 ddata = list_entry( head.driver_list.next , 
                                     struct apci_my_info, 
@@ -181,9 +183,11 @@ apci_add_driver( struct apci_my_info *driver )
 {
   list_add_tail( &driver->driver_list, &head.driver_list );
   /* sprintf(buf, "blah/foo_%d", dev_counter++ ); */
+  device_create(class_apci, NULL , MKDEV(major_num, dev_counter), NULL, "blah/foo_%d", dev_counter );
+  cdev_init( &driver->cdev, &apci_fops );
+  cdev_add( &driver->cdev, dev_counter, 1);
   /* cdev_init( ); */
   /* cdev_add( ); */
-  device_create(class_apci, NULL , MKDEV(major_num, dev_counter), NULL, "blah/foo_%d", dev_counter );
   dev_counter ++;
 }
 
