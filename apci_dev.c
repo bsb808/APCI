@@ -39,14 +39,25 @@ struct apci_lookup_table_entry {
 };
 
 static struct apci_lookup_table_entry acpi_lookup_table[] = {
-  { PCIe_IIRO_8 , 0 , "iiro8" } ,
+  { PCIe_IIRO_8, 0 , "iiro8" } ,
   { PCI_DIO_24D, 0 , "pci24d" },
   {0}
 };
 
+int APCI_LOOKUP_FN(int x ) { 
+  switch(x) {
+  case PCIe_IIRO_8:
+    return 0;
+  case PCI_DIO_24D:
+    return 1;
+  default:
+    return -1;
+  }
+}
+
 static struct class *class_apci;
-static struct device *dev_iiro8;
-static struct device *dev_dio;
+/* static struct device *dev_iiro8; */
+/* static struct device *dev_dio; */
 
 /* PCI Driver setup */
 static struct pci_driver pci_driver = {
@@ -74,13 +85,6 @@ struct apci_my_info head;
 static int dev_counter = 0;
 
 static dev_t apci_first_dev = MKDEV(0,0);
-
-/* Build this up in another exercise */
-/* static struct device_attribute *apci_class_attrs[] = {}; */
-/* 	&dev_attr_block_size, */
-/* 	&dev_attr_group_size, */
-/* }; */
-/* static DEFINE_IDR( apci_ids ); */
 
 
 void *
@@ -189,7 +193,7 @@ apci_free_driver( struct pci_dev *pdev )
      apci_debug("Completed freeing driver.\n");
 }
 
-static void apci_class_dev_unregister(struct apci_my_info *ddata, int id)
+static void apci_class_dev_unregister(struct apci_my_info *ddata )
 {
 
      apci_devel("entering apci_class_dev_unregister.\n");
@@ -197,6 +201,7 @@ static void apci_class_dev_unregister(struct apci_my_info *ddata, int id)
           return;
 
      device_unregister( ddata->dev );
+     dev_counter --;
 
      apci_devel("leaving apci_class_dev_unregister.\n");
 }
@@ -205,8 +210,14 @@ static int __devinit
 apci_class_dev_register( struct apci_my_info *ddata, int id )
 {
     int ret;
+    struct apci_lookup_table_entry *obj = &acpi_lookup_table[ APCI_LOOKUP_FN( (int)ddata->id->device ) ];
     apci_devel("entering apci_class_dev_register\n");
-    ddata->dev = device_create(class_apci, &ddata->pci_dev->dev , apci_first_dev + id, NULL, "foo%d", id );   
+    
+    /* ddata->dev = device_create(class_apci, &ddata->pci_dev->dev , apci_first_dev + id, NULL, "foo%d", id );    */
+    /* ddata->id->device */
+    /* sprintf(buf,"apci/%s_%d", obj->name, obj->counter ++ ); */
+
+    ddata->dev = device_create(class_apci, &ddata->pci_dev->dev , apci_first_dev + id, NULL, "apci/%s_%d", obj->name, obj->counter ++ );
 
     if( IS_ERR( ddata->dev )) {
       apci_error("Error creating device");
@@ -226,8 +237,7 @@ void remove(struct pci_dev *pdev)
 
      apci_devel("entering remove");
 
-     apci_class_dev_unregister( ddata , dev_counter );
-     dev_counter --;
+     apci_class_dev_unregister( ddata );
 
      cdev_del( &ddata->cdev );
      apci_free_driver( pdev );
@@ -254,6 +264,8 @@ int probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
     ddata->nchannels = APCI_NCHANNELS;
     ddata->pci_dev   = pdev;
+    ddata->id        = id;
+
     /* Spin lock init stuff */
 
     
