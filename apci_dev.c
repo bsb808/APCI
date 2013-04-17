@@ -56,8 +56,6 @@ int APCI_LOOKUP_FN(int x ) {
 }
 
 static struct class *class_apci;
-/* static struct device *dev_iiro8; */
-/* static struct device *dev_dio; */
 
 /* PCI Driver setup */
 static struct pci_driver pci_driver = {
