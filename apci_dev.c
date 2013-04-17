@@ -31,6 +31,19 @@ static struct pci_device_id ids[] = {
 };
 MODULE_DEVICE_TABLE(pci, ids);
 
+
+struct apci_lookup_table_entry {
+  int board_id;
+  int counter;
+  char *name;
+};
+
+static struct apci_lookup_table_entry acpi_lookup_table[] = {
+  { PCIe_IIRO_8 , 0 , "iiro8" } ,
+  { PCI_DIO_24D, 0 , "pci24d" },
+  {0}
+};
+
 static struct class *class_apci;
 static struct device *dev_iiro8;
 static struct device *dev_dio;
