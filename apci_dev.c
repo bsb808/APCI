@@ -1,3 +1,9 @@
+/*
+ * ACCES I/O APCI Linux driver 
+ *
+ * Copyright 1998-2013 Jimi Damon <jdamon@accesio.com>
+ *
+ */ 
 #include <linux/module.h>
 #include <linux/types.h>
 #include <linux/kernel.h>
@@ -11,6 +17,8 @@
 #include <linux/sched.h>
 #include <asm/io.h>
 #include <asm/uaccess.h>
+#include <linux/idr.h>
+
 #include "apci_common.h"
 #include "apci_dev.h"
 #include "apci_fops.h"
@@ -52,167 +60,219 @@ static struct class *class_apci;
 struct apci_my_info head;
 static int dev_counter = 0;
 
+static dev_t apci_first_dev = MKDEV(0,0);
 
-void remove(struct pci_dev *dev)
-{
-        apci_debug("entering remove");
-
-        delete_drivers( dev );
-
-        apci_debug("Leaving remove");
-}
+/* Build this up in another exercise */
+/* static struct device_attribute *apci_class_attrs[] = {}; */
+/* 	&dev_attr_block_size, */
+/* 	&dev_attr_group_size, */
+/* }; */
+/* static DEFINE_IDR( apci_ids ); */
 
 
 void *
-init_new_driver(struct pci_dev *dev, const struct pci_device_id *id ) 
+apci_alloc_driver(struct pci_dev *pdev, const struct pci_device_id *id ) 
 {
  
-  struct apci_my_info *ddata = kmalloc( sizeof( struct apci_my_info ) , GFP_KERNEL );
-        int count, plx_bar;
-        struct resource *presource;
+    struct apci_my_info *ddata = kmalloc( sizeof( struct apci_my_info ) , GFP_KERNEL );
+    int count, plx_bar;
+    struct resource *presource;
 
-        if( !ddata )
-                return NULL;
+    if( !ddata )
+      return NULL;
 
-        /* Fill up the struct apci_device_info_structure structure for this card with starting data. */
-        ddata->irq = 0;
-        ddata->irq_capable = 0;
+    /* Fill up the struct apci_device_info_structure structure for this card with starting data. */
+    ddata->irq = 0;
+    ddata->irq_capable = 0;
 
-        for (count = 0; count < 6; count++) {
-                ddata->regions[count].start = 0;
-                ddata->regions[count].end = 0;
-                ddata->regions[count].flags = 0;
-                ddata->regions[count].mapped_address = NULL;
-                ddata->regions[count].length = 0;
-        }
+    for (count = 0; count < 6; count++) {
+        ddata->regions[count].start = 0;
+        ddata->regions[count].end = 0;
+        ddata->regions[count].flags = 0;
+        ddata->regions[count].mapped_address = NULL;
+        ddata->regions[count].length = 0;
+    }
 
-        ddata->plx_region.start = 0;
-        ddata->plx_region.end = 0;
-        ddata->plx_region.length = 0;
-        ddata->plx_region.mapped_address = NULL;
+    ddata->plx_region.start = 0;
+    ddata->plx_region.end = 0;
+    ddata->plx_region.length = 0;
+    ddata->plx_region.mapped_address = NULL;
 
-        ddata->dev_id = id->device;
+    ddata->dev_id = id->device;
 
-        spin_lock_init(&(ddata->irq_lock));
-        ddata->next = NULL;
+    spin_lock_init(&(ddata->irq_lock));
+    ddata->next = NULL;
 
-        if (pci_resource_flags(dev, 0) & IORESOURCE_IO) {
-                plx_bar = 0;
-        } else {
-                plx_bar = 1;
-        }
+    if (pci_resource_flags(pdev, 0) & IORESOURCE_IO) {
+        plx_bar = 0;
+    } else {
+        plx_bar = 1;
+    }
 
-        ddata->plx_region.start	 = pci_resource_start(dev, plx_bar);
-        ddata->plx_region.end	 = pci_resource_end(dev, plx_bar);
-        ddata->plx_region.length = ddata->plx_region.end - ddata->plx_region.start + 1;
-
-        apci_debug("plx_region.start = %08x\n", ddata->plx_region.start );
-        apci_debug("plx_region.end   = %08x\n", ddata->plx_region.end );
-        apci_debug("plx_region.length= %08x\n", ddata->plx_region.length );
-
-        /* TODO: request and remap the region for plx */
-
-        presource = request_region(ddata->plx_region.start,
-                                   ddata->plx_region.length, 
-                                   "apci");
-        if (presource == NULL) {
-                /* We couldn't get the region.  We have only allocated
-                 * driver_data so release it and return an error.
-                 */
-          apci_error("Unable to request region.\n");
-          kfree(ddata);
-          ddata = NULL;
-        }
-        
-        
+    ddata->plx_region.start	 = pci_resource_start(pdev, plx_bar);
+    if( ! ddata->plx_region.start ) {
+      apci_error("Invalid bar %d on start ", plx_bar );
+      goto out_alloc_driver;
+    }
+    ddata->plx_region.end	 = pci_resource_end(pdev, plx_bar);
+    if( ! ddata->plx_region.start ) {
+      apci_error("Invalid bar %d on end", plx_bar );
+      goto out_alloc_driver;
+    }
 
 
-        return ddata;
+    ddata->plx_region.length = ddata->plx_region.end - ddata->plx_region.start + 1;
+
+    apci_debug("plx_region.start = %08x\n", ddata->plx_region.start );
+    apci_debug("plx_region.end   = %08x\n", ddata->plx_region.end );
+    apci_debug("plx_region.length= %08x\n", ddata->plx_region.length );
+
+    /* TODO: request and remap the region for plx */
+
+    presource = request_region(ddata->plx_region.start, ddata->plx_region.length, "apci");
+    if (presource == NULL) {
+        /* We couldn't get the region.  We have only allocated
+         * driver_data so release it and return an error.
+         */
+        apci_error("Unable to request region.\n");
+        goto out_alloc_driver;
+    }
+
+    return ddata;
+
+out_alloc_driver:
+    kfree( ddata );
+    return NULL;
 }
-
 
 /**
  * @desc Removes all of the drivers from this module
  *       before cleanup
  */
 void 
-delete_drivers(struct pci_dev *dev)
-{
-        struct apci_my_info *ddata;
-        int count;
-        int i;
-        apci_debug("Emptying the list of drivers.\n");
+apci_free_driver( struct pci_dev *pdev )
+{ 
+     struct apci_my_info *ddata = pci_get_drvdata( pdev );
+     int count;
 
-        /* cdev_del(&cmos_devp->cdev); */
+     apci_devel("Entering free driver.\n");
 
-        while (  !list_empty( &head.driver_list ) ) {
-                ddata = list_entry( head.driver_list.next , 
-                                    struct apci_my_info, 
-                                    driver_list );
+     apci_debug("releasing memory of %d , length=%d", ddata->plx_region.start, ddata->plx_region.length );
+     release_region( ddata->plx_region.start, ddata->plx_region.length );
 
-                release_region( ddata->plx_region.start, ddata->plx_region.length );
-
-                for (count = 0; count < 6; count ++) {
-                  if (ddata->regions[count].start == 0) {
-                    continue; /* invalid region */
-                  }
-                  if (ddata->regions[count].flags & IORESOURCE_IO) {
-                    release_region(ddata->regions[count].start, ddata->regions[count].length);
-                  } else {
-                    iounmap(ddata->regions[count].mapped_address);
-                    release_mem_region(ddata->regions[count].start, ddata->regions[count].length);
-                  }
-                }
-
-                list_del( head.driver_list.next );
-                kfree(ddata);
-        }
-        apci_debug("Completed emptying list.\n");
-
-        apci_debug("Removing device entries.\n");
-
-        for( i = dev_counter ; i >= 0 ; i -- ) { 
-          device_destroy(class_apci, MKDEV(major_num, i));
-        }
+     for (count = 0; count < 6; count ++) {
+          if (ddata->regions[count].start == 0) {
+               continue; /* invalid region */
+          }
+          if (ddata->regions[count].flags & IORESOURCE_IO) {
+               release_region(ddata->regions[count].start, ddata->regions[count].length);
+          } else {
+               iounmap(ddata->regions[count].mapped_address);
+               release_mem_region(ddata->regions[count].start, ddata->regions[count].length);
+          }
+     }
         
-        apci_debug("Completed removing device entries.\n");
+     kfree(ddata );
+     apci_debug("Completed freeing driver.\n");
 }
 
-static void 
-apci_add_driver( struct apci_my_info *driver )
+static void apci_class_dev_unregister(struct apci_my_info *ddata, int id)
 {
-  list_add_tail( &driver->driver_list, &head.driver_list );
-  /* sprintf(buf, "blah/foo_%d", dev_counter++ ); */
-  device_create(class_apci, NULL , MKDEV(major_num, dev_counter), NULL, "blah/foo_%d", dev_counter );
-  cdev_init( &driver->cdev, &apci_fops );
-  cdev_add( &driver->cdev, dev_counter, 1);
-  /* cdev_init( ); */
-  /* cdev_add( ); */
-  dev_counter ++;
+
+     apci_devel("entering apci_class_dev_unregister.\n");
+     if (ddata->dev == NULL)
+          return;
+
+     device_unregister( ddata->dev );
+
+     apci_devel("leaving apci_class_dev_unregister.\n");
+}
+
+static int __devinit
+apci_class_dev_register( struct apci_my_info *ddata, int id )
+{
+    int ret;
+    apci_devel("entering apci_class_dev_register\n");
+    ddata->dev = device_create(class_apci, &ddata->pci_dev->dev , apci_first_dev + id, NULL, "foo%d", id );   
+
+    if( IS_ERR( ddata->dev )) {
+      apci_error("Error creating device");
+      ret = PTR_ERR( ddata->dev );
+      ddata->dev = NULL;
+      return ret;
+    }
+
+    apci_devel("Leaving apci_class_dev_register\n");
+    return 0;
 }
 
 
-int probe(struct pci_dev *dev, const struct pci_device_id *id)
+void remove(struct pci_dev *pdev)
 {
-  struct apci_my_info *ddata;
-        apci_debug("entering probe");
+     struct apci_my_info *ddata = pci_get_drvdata( pdev );
+
+     apci_devel("entering remove");
+
+     apci_class_dev_unregister( ddata , dev_counter );
+     dev_counter --;
+
+     cdev_del( &ddata->cdev );
+     apci_free_driver( pdev );
+     
+     apci_devel("Leaving remove");
+}
+
+
+
+int probe(struct pci_dev *pdev, const struct pci_device_id *id)
+{
+    struct apci_my_info *ddata;
+    int ret;
+    apci_devel("entering probe");
     
-        if( pci_enable_device(dev) ) {
-                return -ENODEV;
-        }
-        ddata = (struct apci_my_info*) init_new_driver( dev, id  );
+    if( pci_enable_device(pdev) ) {
+      return -ENODEV;
+    }
 
-        if( ddata == NULL ) {
-                return -ENOMEM;
-        }
-        apci_debug("Adding driver to list");
+    ddata = (struct apci_my_info*) apci_alloc_driver( pdev, id  );
+    if( ddata == NULL ) {
+      return -ENOMEM;
+    }
 
-        apci_add_driver( ddata );
+    ddata->nchannels = APCI_NCHANNELS;
+    ddata->pci_dev   = pdev;
+    /* Spin lock init stuff */
 
-        pci_set_drvdata(dev, ddata );
+    
+    /* Request Irq */
+
+    cdev_init( &ddata->cdev, &apci_fops );
+    ddata->cdev.owner = THIS_MODULE;
+
+    ret = cdev_add( &ddata->cdev, apci_first_dev + dev_counter, 1 );
+    if ( ret ) { 
+      apci_error("error registering Driver %d", dev_counter );
+      goto exit_apci_alloc_driver;
+    }
+    
+    pci_set_drvdata(pdev, ddata );
+    ret = apci_class_dev_register( ddata , dev_counter );
+
+    if ( ret )  
+        goto exit_apci_cdev_del;
+
+    dev_counter ++;
+
+    apci_debug("Added driver %d", dev_counter - 1);
+    return 0;
+    
+exit_apci_cdev_del:
+    cdev_del( &ddata->cdev );
+exit_apci_alloc_driver:
+
+    apci_free_driver( pdev );
         
-        apci_debug("Added driver to list");
-        return 0;
+    return ret;
 }
 
  
@@ -221,13 +281,20 @@ apci_init(void)
 {
 	void *ptr_err;
         int result;
+        int ret;
         dev_t dev = MKDEV(0,0);
         apci_debug("performing init duties");
         INIT_LIST_HEAD( &head.driver_list );
+
      
-        /* Register memory i/o */
-	if ((major_num = register_chrdev(0, APCI_CLASS_NAME , &apci_fops)) < 0)
-		return major_num;
+#if 1
+        ret = alloc_chrdev_region( &apci_first_dev, 0, MAX_APCI_CARDS , APCI );
+        if( ret ) {
+          apci_error("Unable to allocate device numbers");
+          return ret;
+        }
+
+#endif
         
         /* Create the sysfs entry for this */
 	class_apci = class_create(THIS_MODULE, APCI_CLASS_NAME  );
@@ -262,28 +329,22 @@ apci_init(void)
 
 	return 0;
 err:
-	/* unregister_chrdev(major_num, APCI_CLASS_NAME); 
-           This one is WRONG!!!
-        */
+
         apci_error("Unregistering chrdev_region.\n");
+
         unregister_chrdev_region(MKDEV(major_num,0),1 );
+
 	class_destroy(class_apci);
 	return PTR_ERR(ptr_err);
 }
 
 static void __exit apci_exit(void)
 {
-apci_debug("performing exit duties");
-/* order should be 
-   pci_unregister_driver
-   cdev_del
-   unregister_chrdev_region
-*/
-pci_unregister_driver(&pci_driver);
-cdev_del(&apci_cdev);
-unregister_chrdev_region(MKDEV(major_num,0),1 );
-class_destroy(class_apci );
-
+    apci_debug("performing exit duties");
+    pci_unregister_driver(&pci_driver);
+    cdev_del(&apci_cdev);
+    unregister_chrdev_region(MKDEV(major_num,0),1 );
+    class_destroy(class_apci );
 }
 
 module_init( apci_init  );
