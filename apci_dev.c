@@ -477,7 +477,7 @@ irqreturn_t apci_interrupt(int irq, void *dev_id)
     struct apci_my_info  *ddata;
     __u8  byte;
 
-    apci_debug("ISR called.\n");    
+    apci_devel("ISR called.\n");    
 
     ddata = (struct apci_my_info *) dev_id;
 
@@ -499,12 +499,6 @@ irqreturn_t apci_interrupt(int irq, void *dev_id)
         return IRQ_NONE; /* not me */
       }
     }
-
-    /* Now we know it was us that caused the IRQ so clear it from
-     * the card/board.
-     */
-
-    apci_error("Entering ISR\n");
     
     /* Handle interrupt based on the device ID for the board. */
     switch (ddata->dev_id) {
@@ -559,9 +553,8 @@ irqreturn_t apci_interrupt(int irq, void *dev_id)
         case PCI_IIRO_16:
         case PCI_IDIO_16:
         case LPCI_IIRO_8:
-          printk(KERN_ERR "Found an interrupt for PCIe_IIRO_8 !!");
+          apci_devel("Interrupt for PCIe_IIRO_8");
           outb(0, ddata->regions[2].start + 0x1);
-          /* outb(0, ddata->regions[2].start + 0x1); */
           break;
 
         case PCI_IDI_48:
