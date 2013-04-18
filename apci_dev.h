@@ -78,6 +78,56 @@
 #define PCI_WDG_CSM	0x22C0
 #define PCI_WDG_IMPAC	0x12D0
 
+/* names for the drivers we create */
+#define NAME_PCIe_DIO_24                "pcie_dio_24"
+#define NAME_PCIe_DIO_24D               "pcie_dio_24d"
+#define NAME_PCIe_DIO_24S               "pcie_dio_24s"
+#define NAME_PCIe_DIO_24DS              "pcie_dio_24ds"
+#define NAME_PCIe_DIO_24DC              "pcie_dio_24dc"
+#define NAME_PCIe_DIO_24DCS             "pcie_dio_24dcs"
+#define NAME_PCIe_DIO_48                "pcie_dio_48"
+#define NAME_PCIe_DIO_48S               "pcie_dio_48s"
+#define NAME_PCIe_IIRO_8                "pcie_iiro_8"
+#define NAME_PCIe_IIRO_16               "pcie_iiro_16"
+#define NAME_PCI_DIO_24H                "pci_dio_24h"
+#define NAME_PCI_DIO_24D                "pci_dio_24d"
+#define NAME_PCI_DIO_24H_C              "PCI_dio_24h_c"
+#define NAME_PCI_DIO_24D_C              "PCI_dio_24d_c"
+#define NAME_PCI_DIO_24S                "pci_dio_24s"
+#define NAME_PCI_DIO_48                 "pci_dio_48"
+#define NAME_PCI_DIO_48S                "pci_dio_48s"
+#define NAME_P104_DIO_48S               "p104_dio_48s"
+#define NAME_PCI_DIO_48H                "pci_dio_48h"
+#define NAME_PCI_DIO_48HS               "pci_dio_48hs"
+#define NAME_PCI_DIO_72                 "pci_dio_72"
+#define NAME_P104_DIO_96                "p104_dio_96"
+#define NAME_PCI_DIO_96                 "pci_dio_96"
+#define NAME_PCI_DIO_96CT               "pci_dio_96ct"
+#define NAME_PCI_DIO_96C3               "pci_dio_96c3"
+#define NAME_PCI_DIO_120                "pci_dio_120"
+#define NAME_PCI_AI12_16                "pci_ai12_16"
+#define NAME_PCI_AI12_16A               "pci_ai12_16a"
+#define NAME_PCI_AIO12_16               "pci_aio12_16"
+#define NAME_PCI_A12_16A                "pci_a12_16a"
+#define NAME_LPCI_A16_16A               "lpci_a16_16a"
+#define NAME_PCI_DA12_16                "pci_da12_16"
+#define NAME_PCI_DA12_8                 "pci_da12_8"
+#define NAME_PCI_DA12_6                 "pci_da12_6"
+#define NAME_PCI_DA12_4                 "pci_da12_4"
+#define NAME_PCI_DA12_2                 "pci_da12_2"
+#define NAME_PCI_DA12_16V               "pci_da12_16v"
+#define NAME_PCI_DA12_8V                "pci_da12_8v"
+#define NAME_LPCI_IIRO_8                "lpci_iiro_8"
+#define NAME_PCI_IIRO_8                 "pci_iiro_8"
+#define NAME_PCI_IIRO_16                "pci_iiro_16"
+#define NAME_PCI_IDI_48                 "pci_idi_48"
+#define NAME_PCI_IDO_48                 "pci_ido_48"
+#define NAME_PCI_IDIO_16                "pci_idio_16"
+#define NAME_PCI_WDG_2S                 "pci_wdg_2s"
+#define NAME_PCI_WDG_CSM                "pci_wdg_csm"
+#define NAME_PCI_WDG_IMPAC              "pci_wdg_impac"
+
+
 
 typedef struct {
     __u32 start;
@@ -96,6 +146,7 @@ struct apci_my_info {
      __u32 dev_id;
      io_region regions[6], plx_region;
      const struct pci_device_id *id;
+     int is_pcie;
      int irq;
      int irq_capable; /* is the card even able to generate irqs? */
      int waiting_for_irq; /* boolean for if the user has requested an IRQ */

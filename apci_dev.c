@@ -15,6 +15,7 @@
 #include <linux/spinlock.h>
 #include <linux/interrupt.h>
 #include <linux/sched.h>
+#include <linux/sort.h>
 #include <asm/io.h>
 #include <asm/uaccess.h>
 #include <linux/idr.h>
@@ -38,22 +39,78 @@ struct apci_lookup_table_entry {
   char *name;
 };
 
-static struct apci_lookup_table_entry acpi_lookup_table[] = {
+
+/* Driver naming section */
+#define APCI_MAKE_ENTRY(X) { X, 0, NAME_ ## X }
+#define APCI_MAKE_DRIVER_TABLE(...) { __VA_ARGS__ }
+/* acpi_lookup_table */
+static struct apci_lookup_table_entry apci_driver_table[] = {
   { PCIe_IIRO_8, 0 , "iiro8" } ,
   { PCI_DIO_24D, 0 , "pci24d" },
   {0}
 };
 
-int APCI_LOOKUP_FN(int x ) { 
-  switch(x) {
-  case PCIe_IIRO_8:
-    return 0;
-  case PCI_DIO_24D:
-    return 1;
-  default:
+#define APCI_TABLE_SIZE  sizeof(apci_driver_table)/sizeof(struct apci_lookup_table_entry)
+#define APCI_TABLE_ENTRY_SIZE sizeof( struct apci_lookup_table_entry )
+
+static int
+te_sort(const void *m1, const void *m2)
+{
+    struct apci_lookup_table_entry *mi1 = (struct apci_lookup_table_entry *) m1;
+    struct apci_lookup_table_entry *mi2 = (struct apci_lookup_table_entry *) m2;
+    return ( mi1->board_id < mi2->board_id ? -1 : mi1->board_id != mi2->board_id );
+}
+
+void *bsearch(const void *key, const void *base, size_t num, size_t size,
+	      int (*cmp)(const void *key, const void *elt))
+{
+	int start = 0, end = num - 1, mid, result;
+	if (num == 0)
+		return NULL;
+
+	while (start <= end) {
+		mid = (start + end) / 2;
+		result = cmp(key, base + mid * size);
+		if (result < 0)
+			end = mid - 1;
+		else if (result > 0)
+			start = mid + 1;
+		else
+			return (void *)base + mid * size;
+	}
+
+	return NULL;
+}
+
+
+
+int APCI_LOOKUP_ENTRY(int fx ) {
+     struct apci_lookup_table_entry driver_entry;
+     struct apci_lookup_table_entry *driver_num;
+     driver_entry.board_id = fx;
+     driver_num = (struct apci_lookup_table_entry *)bsearch( &driver_entry, 
+                                                             apci_driver_table, 
+                                                             APCI_TABLE_SIZE,
+                                                             APCI_TABLE_ENTRY_SIZE, 
+                                                             te_sort 
+          );
+     
+  if( !driver_num ) {
     return -1;
+  } else {
+    return (int)(driver_num - apci_driver_table );
   }
 }
+/* int APCI_LOOKUP_ENTRY(int x ) {  */
+/*   switch(x) { */
+/*   case PCIe_IIRO_8: */
+/*     return 0; */
+/*   case PCI_DIO_24D: */
+/*     return 1; */
+/*   default: */
+/*     return -1; */
+/*   } */
+/* } */
 
 static struct class *class_apci;
 
@@ -144,10 +201,93 @@ apci_alloc_driver(struct pci_dev *pdev, const struct pci_device_id *id )
 
     /* TODO: request and remap the region for plx */
 
+    switch(ddata->dev_id) {
+         case PCIe_DIO_24:/* group1 */
+         case PCIe_DIO_24D:
+         case PCIe_DIO_24S:
+         case PCIe_DIO_24DS:
+         case PCIe_DIO_24DC:
+         case PCIe_DIO_24DCS:
+         case PCIe_DIO_48:
+         case PCIe_DIO_48S:
+         case PCIe_IIRO_8:
+         case PCIe_IIRO_16:
+         case PCI_DIO_24H:
+         case PCI_DIO_24D:
+         case PCI_DIO_24H_C:
+         case PCI_DIO_24D_C:
+         case PCI_DIO_24S:
+         case PCI_DIO_48:
+         case PCI_DIO_48S:
+         case P104_DIO_48S:
+         case PCI_DIO_72:
+         case PCI_DIO_96:
+         case PCI_DIO_96C3:
+         case PCI_DIO_120:
+         case PCI_AI12_16:
+         case PCI_AI12_16A:
+         case PCI_A12_16A:
+         case LPCI_IIRO_8:
+         case PCI_IIRO_8:
+         case PCI_IIRO_16:
+         case PCI_IDI_48:
+         case PCI_IDIO_16:
+              ddata->regions[2].start   = pci_resource_start(pdev, 2);
+              ddata->regions[2].end     = pci_resource_end(pdev, 2);
+              ddata->regions[2].flags   = pci_resource_flags(pdev, 2);
+              ddata->regions[2].length  = ddata->regions[2].end - ddata->regions[2].start + 1;
+              ddata->irq                = pdev->irq;
+              ddata->irq_capable        = 1;
+              apci_debug("regions[2].start = %08x\n", ddata->regions[2].start );
+              apci_debug("regions[2].end   = %08x\n", ddata->regions[2].end );
+              apci_debug("regions[2].length= %08x\n", ddata->regions[2].length );
+              apci_debug("regions[2].flags = %lx\n", ddata->regions[2].flags );
+              apci_debug("irq = %d\n", ddata->irq );
+              break;
+
+         case PCI_IDO_48: /* group2 */
+              ddata->regions[2].start   = pci_resource_start(pdev, 2);
+              ddata->regions[2].end     = pci_resource_end(pdev, 2);
+              ddata->regions[2].flags   = pci_resource_flags(pdev, 2);
+              ddata->regions[2].length  = ddata->regions[2].end - ddata->regions[2].start + 1;
+              break;
+
+         case LPCI_A16_16A:
+         case PCI_DA12_16: /* group3 */
+         case PCI_DA12_8:
+              ddata->regions[2].start   = pci_resource_start(pdev, 2);
+              ddata->regions[2].end     = pci_resource_end(pdev, 2);
+              ddata->regions[2].flags   = pci_resource_flags(pdev, 2);
+              ddata->regions[2].length  = ddata->regions[2].end - ddata->regions[2].start + 1;
+
+              ddata->regions[3].start   = pci_resource_start(pdev, 3);
+              ddata->regions[3].end     = pci_resource_end(pdev, 3);
+              ddata->regions[3].flags   = pci_resource_flags(pdev, 3);
+              ddata->regions[3].length  = ddata->regions[3].end - ddata->regions[3].start + 1;
+
+              ddata->irq = pdev->irq;
+              ddata->irq_capable = 1;
+              break;
+
+         case PCI_DA12_6: /* group4 */
+         case PCI_DA12_4:
+         case PCI_DA12_2:
+              ddata->regions[2].start   = pci_resource_start(pdev, 2);
+              ddata->regions[2].end     = pci_resource_end(pdev, 2);
+              ddata->regions[2].flags   = pci_resource_flags(pdev, 2);
+              ddata->regions[2].length  = ddata->regions[2].end - ddata->regions[2].start + 1;
+
+              ddata->regions[3].start   = pci_resource_start(pdev, 3);
+              ddata->regions[3].end     = pci_resource_end(pdev, 3);
+              ddata->regions[3].flags   = pci_resource_flags(pdev, 3);
+              ddata->regions[3].length  = ddata->regions[3].end - ddata->regions[3].start + 1;
+              break;
+    }
+
     presource = request_region(ddata->plx_region.start, ddata->plx_region.length, "apci");
     if (presource == NULL) {
         /* We couldn't get the region.  We have only allocated
-         * driver_data so release it and return an error.
+         * ddata so release it and return an error.
          */
         apci_error("Unable to request region.\n");
         goto out_alloc_driver;
@@ -193,29 +333,30 @@ apci_free_driver( struct pci_dev *pdev )
 
 static void apci_class_dev_unregister(struct apci_my_info *ddata )
 {
+     struct apci_lookup_table_entry *obj = &apci_driver_table[ APCI_LOOKUP_ENTRY( (int)ddata->id->device ) ];
+     apci_devel("entering apci_class_dev_register\n");
+/* ddata->dev = device_create(class_apci, &ddata->pci_dev->dev , apci_first_dev + id, NULL, "apci/%s_%d", obj->name, obj->counter ++ ); */
+     
 
      apci_devel("entering apci_class_dev_unregister.\n");
      if (ddata->dev == NULL)
           return;
 
      device_unregister( ddata->dev );
+     obj->counter --;
      dev_counter --;
 
      apci_devel("leaving apci_class_dev_unregister.\n");
 }
 
 static int __devinit
-apci_class_dev_register( struct apci_my_info *ddata, int id )
+apci_class_dev_register( struct apci_my_info *ddata )
 {
     int ret;
-    struct apci_lookup_table_entry *obj = &acpi_lookup_table[ APCI_LOOKUP_FN( (int)ddata->id->device ) ];
+    struct apci_lookup_table_entry *obj = &apci_driver_table[ APCI_LOOKUP_ENTRY( (int)ddata->id->device ) ];
     apci_devel("entering apci_class_dev_register\n");
-    
-    /* ddata->dev = device_create(class_apci, &ddata->pci_dev->dev , apci_first_dev + id, NULL, "foo%d", id );    */
-    /* ddata->id->device */
-    /* sprintf(buf,"apci/%s_%d", obj->name, obj->counter ++ ); */
 
-    ddata->dev = device_create(class_apci, &ddata->pci_dev->dev , apci_first_dev + id, NULL, "apci/%s_%d", obj->name, obj->counter ++ );
+    ddata->dev = device_create(class_apci, &ddata->pci_dev->dev , apci_first_dev + dev_counter, NULL, "apci/%s_%d", obj->name, obj->counter ++ );
 
     if( IS_ERR( ddata->dev )) {
       apci_error("Error creating device");
@@ -223,10 +364,149 @@ apci_class_dev_register( struct apci_my_info *ddata, int id )
       ddata->dev = NULL;
       return ret;
     }
-
-    apci_devel("Leaving apci_class_dev_register\n");
+    dev_counter ++;
+    apci_devel("leaving apci_class_dev_register\n");
     return 0;
 }
+
+irqreturn_t apci_interrupt(int irq, void *dev_id)
+{
+    struct apci_my_info  *ddata;
+    __u8  byte;
+
+    apci_debug("ISR called.\n");    
+
+    ddata = (struct apci_my_info *) dev_id;
+
+    /* The first thing we do is check to see if the card is causing an IRQ.
+     * If it is then we can proceed to clear the IRQ. Otherwise let
+     * Linux know that it wasn't us.
+     */
+    if( !ddata->is_pcie ) { 
+
+      byte = inb(ddata->plx_region.start + 0x4C);
+      
+      if ((byte & 4) == 0) {
+        return IRQ_NONE; /* not me */
+      }
+    } else {                    /* PCIe */
+      byte = inb(ddata->plx_region.start + 0x69);
+      
+      if ((byte & 0x80 ) == 0) {
+        return IRQ_NONE; /* not me */
+      }
+    }
+
+    /* Now we know it was us that caused the IRQ so clear it from
+     * the card/board.
+     */
+
+    apci_error("Entering ISR\n");
+    
+    /* Handle interrupt based on the device ID for the board. */
+    switch (ddata->dev_id) {
+        case PCIe_DIO_24:
+        case PCIe_DIO_24D:
+        case PCIe_DIO_24S:
+        case PCIe_DIO_24DS:
+        case PCIe_DIO_24DC:
+        case PCIe_DIO_24DCS:
+        case PCIe_DIO_48:
+        case PCIe_DIO_48S:
+        case PCI_DIO_24H:
+        case PCI_DIO_24D:
+        case PCI_DIO_24H_C:
+        case PCI_DIO_24D_C:
+        case PCI_DIO_24S:
+        case PCI_DIO_48:
+        case PCI_DIO_48S:
+          outb(0, ddata->regions[2].start + 0x0f);
+          break;
+
+          /* These cards don't have the IRQ simply "Cleared",
+           * it must be disabled then re-enabled.
+           */
+        case PCI_DIO_72:
+        case PCI_DIO_96:
+        case PCI_DIO_96CT:
+        case PCI_DIO_96C3:
+        case PCI_DIO_120:
+          outb(0, ddata->regions[2].start + 0x1e);
+          outb(0, ddata->regions[2].start + 0x1f);
+          break;
+
+        case PCI_DA12_16:
+        case PCI_DA12_8:
+        case PCI_DA12_6:
+        case PCI_DA12_4:
+        case PCI_DA12_2:
+        case PCI_DA12_16V:
+        case PCI_DA12_8V:
+          byte = inb(ddata->regions[2].start + 0xC);
+          break;
+
+        case PCI_WDG_CSM:
+          outb(0, ddata->regions[2].start + 0x9);
+          outb(0, ddata->regions[2].start + 0x4);
+          break;
+
+        case PCIe_IIRO_8:
+        case PCIe_IIRO_16:
+        case PCI_IIRO_8:
+        case PCI_IIRO_16:
+        case PCI_IDIO_16:
+        case LPCI_IIRO_8:
+          printk(KERN_ERR "Found an interrupt for PCIe_IIRO_8 !!");
+          outb(0, ddata->regions[2].start + 0x1);
+          /* outb(0, ddata->regions[2].start + 0x1); */
+          break;
+
+        case PCI_IDI_48:
+          byte = inb(ddata->regions[2].start + 0x7);
+          break;
+
+        case PCI_AI12_16:
+        case PCI_AI12_16A:
+        case PCI_AIO12_16:
+        case PCI_A12_16A:
+          /* Clear the FIFO interrupt enable bits, but leave
+           * the counter enabled.  Otherwise the IRQ will not
+           * go away and user code will never run as the machine
+           * will hang in a never-ending IRQ loop. The userland
+           * irq routine must re-enable the interrupts if desired.
+           */
+          outb( 0x01, ddata->regions[2].start + 0x4);
+          byte = inb(ddata->regions[2].start + 0x4);
+          break;
+
+        case LPCI_A16_16A:
+          outb(0, ddata->regions[2].start + 0xc);
+          outb(0x10, ddata->regions[2].start + 0xc);
+          break;
+
+        case P104_DIO_96:  /* unknown at this time 6-FEB-2007 */
+        case P104_DIO_48S: /* unknown at this time 6-FEB-2007 */
+          break;
+    };
+
+    /* Check to see if we were actually waiting for an IRQ. If we were
+     * then we need to wake the queue associated with this device.
+     * Right now it is not possible for any other code sections that access
+     * the critical data to interrupt us so we won't disable other IRQs.
+     */
+    spin_lock(&(ddata->irq_lock));
+
+    if (ddata->waiting_for_irq) {
+      ddata->waiting_for_irq = 0;
+      spin_unlock(&(ddata->irq_lock));
+      wake_up_interruptible(&(ddata->wait_queue));
+    } else {
+      spin_unlock(&(ddata->irq_lock));
+    }
+
+    return IRQ_HANDLED;
+}
+
 
 
 void remove(struct pci_dev *pdev)
@@ -240,7 +520,7 @@ void remove(struct pci_dev *pdev)
      cdev_del( &ddata->cdev );
      apci_free_driver( pdev );
      
-     apci_devel("Leaving remove");
+     apci_devel("leaving remove");
 }
 
 
@@ -259,15 +539,39 @@ int probe(struct pci_dev *pdev, const struct pci_device_id *id)
     if( ddata == NULL ) {
       return -ENOMEM;
     }
-
+    /* Setup actual device driver items */
     ddata->nchannels = APCI_NCHANNELS;
     ddata->pci_dev   = pdev;
     ddata->id        = id;
+    ddata->is_pcie   = ( ddata->plx_region.length >= 0x100 ? 1 : 0 );
+    apci_debug("Is device PCIE : %d", ddata->is_pcie );
 
     /* Spin lock init stuff */
 
     
     /* Request Irq */
+    if ( ddata->irq_capable ) {
+         apci_error("Requesting Interript, %u", (unsigned int)ddata->irq );
+         ret = request_irq((unsigned int) ddata->irq,
+                              apci_interrupt,
+                              IRQF_SHARED ,
+                              "apci",
+                              ddata);
+         switch( id->device ) { 
+         case PCIe_IIRO_8:
+           printk(KERN_ERR "Found PCIe_IIRO_8");
+           outb( 0x9, ddata->plx_region.start + 0x69 ); 
+         default:
+           printk(KERN_ERR "Found no device");
+         }
+
+         if (ret) {
+              apci_error("Could not allocate irq.");
+              goto exit_free;
+         }
+    }
+
+    /* Add to sysfs */
 
     cdev_init( &ddata->cdev, &apci_fops );
     ddata->cdev.owner = THIS_MODULE;
@@ -275,26 +579,26 @@ int probe(struct pci_dev *pdev, const struct pci_device_id *id)
     ret = cdev_add( &ddata->cdev, apci_first_dev + dev_counter, 1 );
     if ( ret ) { 
       apci_error("error registering Driver %d", dev_counter );
-      goto exit_apci_alloc_driver;
+      goto exit_irq;
     }
     
     pci_set_drvdata(pdev, ddata );
-    ret = apci_class_dev_register( ddata , dev_counter );
+    ret = apci_class_dev_register( ddata );
 
     if ( ret )  
-        goto exit_apci_cdev_del;
-
-    dev_counter ++;
+        goto exit_pci_setdrv;
 
     apci_debug("Added driver %d", dev_counter - 1);
-    return 0;
-    
-exit_apci_cdev_del:
-    cdev_del( &ddata->cdev );
-exit_apci_alloc_driver:
 
+    return 0;
+
+exit_pci_setdrv:
+    pci_set_drvdata(pdev,NULL);
+    cdev_del( &ddata->cdev );
+exit_irq:
+    free_irq(pdev->irq, ddata );
+exit_free:
     apci_free_driver( pdev );
-        
     return ret;
 }
 
@@ -308,17 +612,15 @@ apci_init(void)
         dev_t dev = MKDEV(0,0);
         apci_debug("performing init duties");
         INIT_LIST_HEAD( &head.driver_list );
+        sort( apci_driver_table, APCI_TABLE_SIZE , APCI_TABLE_ENTRY_SIZE ,te_sort, NULL );
 
-     
-#if 1
+
         ret = alloc_chrdev_region( &apci_first_dev, 0, MAX_APCI_CARDS , APCI );
         if( ret ) {
           apci_error("Unable to allocate device numbers");
           return ret;
         }
 
-#endif
-        
         /* Create the sysfs entry for this */
 	class_apci = class_create(THIS_MODULE, APCI_CLASS_NAME  );
 	if (IS_ERR(ptr_err = class_apci))
@@ -345,10 +647,6 @@ apci_init(void)
         
         /* needed to get the probe and remove to be called */
         pci_register_driver(&pci_driver);
-
-        /* Goal is to loop through each device that we 
-           recognize and print it out 
-        */
 
 	return 0;
 err:
