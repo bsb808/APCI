@@ -44,14 +44,6 @@ struct apci_lookup_table_entry {
 #define APCI_MAKE_ENTRY(X) { X, 0, NAME_ ## X }
 #define APCI_MAKE_DRIVER_TABLE(...) { __VA_ARGS__ }
 /* acpi_lookup_table */
-static struct apci_lookup_table_entry apci_driver_table[] = {
-  { PCIe_IIRO_8, 0 , "iiro8" } ,
-  { PCI_DIO_24D, 0 , "pci24d" },
-  {0}
-};
-
-#define APCI_TABLE_SIZE  sizeof(apci_driver_table)/sizeof(struct apci_lookup_table_entry)
-#define APCI_TABLE_ENTRY_SIZE sizeof( struct apci_lookup_table_entry )
 
 static int
 te_sort(const void *m1, const void *m2)
@@ -60,6 +52,85 @@ te_sort(const void *m1, const void *m2)
     struct apci_lookup_table_entry *mi2 = (struct apci_lookup_table_entry *) m2;
     return ( mi1->board_id < mi2->board_id ? -1 : mi1->board_id != mi2->board_id );
 }
+
+
+
+#if 1 
+static struct apci_lookup_table_entry apci_driver_table[] = {
+  { PCIe_IIRO_8, 0 , "iiro8" } ,
+  { PCI_DIO_24D, 0 , "pci24d" },
+  {0}
+};
+
+int APCI_LOOKUP_ENTRY(int x ) { 
+  switch(x) {
+  case PCIe_IIRO_8:
+    return 0;
+  case PCI_DIO_24D:
+    return 1;
+  default:
+    return -1;
+  }
+}
+
+#define APCI_TABLE_SIZE  sizeof(apci_driver_table)/sizeof(struct apci_lookup_table_entry)
+#define APCI_TABLE_ENTRY_SIZE sizeof( struct apci_lookup_table_entry )
+
+
+#else 
+static struct apci_lookup_table_entry apci_driver_table[] = \
+  APCI_MAKE_DRIVER_TABLE( 
+                         APCI_MAKE_ENTRY( PCIe_DIO_24 ),
+                         APCI_MAKE_ENTRY( PCIe_DIO_24D ),
+                         APCI_MAKE_ENTRY( PCIe_DIO_24S ),
+                         APCI_MAKE_ENTRY( PCIe_DIO_24DS ),
+                         APCI_MAKE_ENTRY( PCIe_DIO_24DC ),
+                         APCI_MAKE_ENTRY( PCIe_DIO_24DCS ),
+                         APCI_MAKE_ENTRY( PCIe_DIO_48 ),
+                         APCI_MAKE_ENTRY( PCIe_DIO_48S ),
+                         APCI_MAKE_ENTRY( PCIe_IIRO_8 ),
+                         APCI_MAKE_ENTRY( PCIe_IIRO_16 ),
+                         APCI_MAKE_ENTRY( PCI_DIO_24H ),
+                         APCI_MAKE_ENTRY( PCI_DIO_24D ),
+                         APCI_MAKE_ENTRY( PCI_DIO_24H_C ),
+                         APCI_MAKE_ENTRY( PCI_DIO_24D_C ),
+                         APCI_MAKE_ENTRY( PCI_DIO_24S ),
+                         APCI_MAKE_ENTRY( PCI_DIO_48 ),
+                         APCI_MAKE_ENTRY( PCI_DIO_48S ),
+                         APCI_MAKE_ENTRY( P104_DIO_48S ),
+                         APCI_MAKE_ENTRY( PCI_DIO_48H ),
+                         APCI_MAKE_ENTRY( PCI_DIO_48HS ),
+                         APCI_MAKE_ENTRY( PCI_DIO_72 ),
+                         APCI_MAKE_ENTRY( P104_DIO_96 ),
+                         APCI_MAKE_ENTRY( PCI_DIO_96 ),
+                         APCI_MAKE_ENTRY( PCI_DIO_96CT ),
+                         APCI_MAKE_ENTRY( PCI_DIO_96C3 ),
+                         APCI_MAKE_ENTRY( PCI_DIO_120 ),
+                         APCI_MAKE_ENTRY( PCI_AI12_16 ),
+                         APCI_MAKE_ENTRY( PCI_AI12_16A ),
+                         APCI_MAKE_ENTRY( PCI_AIO12_16 ),
+                         APCI_MAKE_ENTRY( PCI_A12_16A ),
+                         APCI_MAKE_ENTRY( LPCI_A16_16A ),
+                         APCI_MAKE_ENTRY( PCI_DA12_16 ),
+                         APCI_MAKE_ENTRY( PCI_DA12_8 ),
+                         APCI_MAKE_ENTRY( PCI_DA12_6 ),
+                         APCI_MAKE_ENTRY( PCI_DA12_4 ),
+                         APCI_MAKE_ENTRY( PCI_DA12_2 ),
+                         APCI_MAKE_ENTRY( PCI_DA12_16V ),
+                         APCI_MAKE_ENTRY( PCI_DA12_8V ),
+                         APCI_MAKE_ENTRY( LPCI_IIRO_8 ),
+                         APCI_MAKE_ENTRY( PCI_IIRO_8 ),
+                         APCI_MAKE_ENTRY( PCI_IIRO_16 ),
+                         APCI_MAKE_ENTRY( PCI_IDI_48 ),
+                         APCI_MAKE_ENTRY( PCI_IDO_48 ),
+                         APCI_MAKE_ENTRY( PCI_IDIO_16 ),
+                         APCI_MAKE_ENTRY( PCI_WDG_2S ),
+                         APCI_MAKE_ENTRY( PCI_WDG_CSM ),
+                         APCI_MAKE_ENTRY( PCI_WDG_IMPAC ), );
+
+#define APCI_TABLE_SIZE  sizeof(apci_driver_table)/sizeof(struct apci_lookup_table_entry)
+#define APCI_TABLE_ENTRY_SIZE sizeof( struct apci_lookup_table_entry )
+
 
 void *bsearch(const void *key, const void *base, size_t num, size_t size,
 	      int (*cmp)(const void *key, const void *elt))
@@ -84,6 +155,7 @@ void *bsearch(const void *key, const void *base, size_t num, size_t size,
 
 
 
+
 int APCI_LOOKUP_ENTRY(int fx ) {
      struct apci_lookup_table_entry driver_entry;
      struct apci_lookup_table_entry *driver_num;
@@ -101,16 +173,8 @@ int APCI_LOOKUP_ENTRY(int fx ) {
     return (int)(driver_num - apci_driver_table );
   }
 }
-/* int APCI_LOOKUP_ENTRY(int x ) {  */
-/*   switch(x) { */
-/*   case PCIe_IIRO_8: */
-/*     return 0; */
-/*   case PCI_DIO_24D: */
-/*     return 1; */
-/*   default: */
-/*     return -1; */
-/*   } */
-/* } */
+#endif
+
 
 static struct class *class_apci;
 
@@ -153,7 +217,7 @@ apci_alloc_driver(struct pci_dev *pdev, const struct pci_device_id *id )
     if( !ddata )
       return NULL;
 
-    /* Fill up the struct apci_device_info_structure structure for this card with starting data. */
+    /* Initialize with defaults, fill in specifics later */
     ddata->irq = 0;
     ddata->irq_capable = 0;
 
@@ -198,6 +262,16 @@ apci_alloc_driver(struct pci_dev *pdev, const struct pci_device_id *id )
     apci_debug("plx_region.start = %08x\n", ddata->plx_region.start );
     apci_debug("plx_region.end   = %08x\n", ddata->plx_region.end );
     apci_debug("plx_region.length= %08x\n", ddata->plx_region.length );
+
+    presource = request_region(ddata->plx_region.start, ddata->plx_region.length, "apci");
+
+    if (presource == NULL) {
+        /* We couldn't get the region.  We have only allocated
+         * ddata so release it and return an error.
+         */
+        apci_error("Unable to request region.\n");
+        goto out_alloc_driver;
+    }
 
     /* TODO: request and remap the region for plx */
 
@@ -284,13 +358,42 @@ apci_alloc_driver(struct pci_dev *pdev, const struct pci_device_id *id )
               break;
     }
 
-    presource = request_region(ddata->plx_region.start, ddata->plx_region.length, "apci");
-    if (presource == NULL) {
-        /* We couldn't get the region.  We have only allocated
-         * ddata so release it and return an error.
-         */
-        apci_error("Unable to request region.\n");
+
+    /* request regions */
+    for (count = 0; count < 6; count++) {
+      if (ddata->regions[count].start == 0) {
+        continue; /* invalid region */
+      }
+      if (ddata->regions[count].flags & IORESOURCE_IO) {
+
+        apci_debug("requesting io region start=%08x,len=%d", ddata->regions[count].start, ddata->regions[count].length );
+        presource = request_region(ddata->regions[count].start, ddata->regions[count].length, "apci");
+      } else {
+        apci_debug("requesting mem region start=%08x,len=%d", ddata->regions[count].start, ddata->regions[count].length );
+        presource = request_mem_region(ddata->regions[count].start, ddata->regions[count].length, "apci");
+        if (presource != NULL) {
+          ddata->regions[count].mapped_address = ioremap(ddata->regions[count].start, ddata->regions[count].length);
+        }
+      }
+
+      if (presource == NULL) {
+        /* If we failed to allocate the region. */
+        count--;
+
+        while (count >= 0) {
+          if (ddata->regions[count].start != 0) {
+            if (ddata->regions[count].flags & IORESOURCE_IO) {
+              /* if it is a valid region */
+              release_region(ddata->regions[count].start, ddata->regions[count].length);
+            } else {
+              iounmap(ddata->regions[count].mapped_address);
+
+              release_region(ddata->regions[count].start, ddata->regions[count].length);
+            }
+          }
+        }
         goto out_alloc_driver;
+      }
     }
 
     return ddata;
@@ -312,7 +415,7 @@ apci_free_driver( struct pci_dev *pdev )
 
      apci_devel("Entering free driver.\n");
 
-     apci_debug("releasing memory of %d , length=%d", ddata->plx_region.start, ddata->plx_region.length );
+     apci_debug("releasing memory of %08x , length=%d", ddata->plx_region.start, ddata->plx_region.length );
      release_region( ddata->plx_region.start, ddata->plx_region.length );
 
      for (count = 0; count < 6; count ++) {
@@ -515,6 +618,10 @@ void remove(struct pci_dev *pdev)
 
      apci_devel("entering remove");
 
+     spin_lock(&(ddata->irq_lock));
+     free_irq(pdev->irq, ddata );
+     spin_unlock(&(ddata->irq_lock));
+
      apci_class_dev_unregister( ddata );
 
      cdev_del( &ddata->cdev );
@@ -551,7 +658,7 @@ int probe(struct pci_dev *pdev, const struct pci_device_id *id)
     
     /* Request Irq */
     if ( ddata->irq_capable ) {
-         apci_error("Requesting Interript, %u", (unsigned int)ddata->irq );
+         apci_error("Requesting Interrupt, %u", (unsigned int)ddata->irq );
          ret = request_irq((unsigned int) ddata->irq,
                               apci_interrupt,
                               IRQF_SHARED ,
@@ -559,10 +666,10 @@ int probe(struct pci_dev *pdev, const struct pci_device_id *id)
                               ddata);
          switch( id->device ) { 
          case PCIe_IIRO_8:
-           printk(KERN_ERR "Found PCIe_IIRO_8");
+           apci_debug("Found PCIe_IIRO_8");
            outb( 0x9, ddata->plx_region.start + 0x69 ); 
          default:
-           printk(KERN_ERR "Found no device");
+           apci_debug("Found no device");
          }
 
          if (ret) {
