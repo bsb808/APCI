@@ -39,10 +39,11 @@ int open_apci( struct inode *inode, struct file *filp )
 ssize_t read_apci(struct file *filp, char __user *buf,
                          size_t len, loff_t *off)
 {
-    size_t i = min_t(size_t, len, 4);
-    /* struct apci_my_info  *ddata = filp->private_data ; */
-
-    return copy_to_user(buf, APCI "\n", i) ? -EFAULT : i;
+    struct apci_my_info  *ddata = filp->private_data ;
+    int status;
+    unsigned int value = inb( ddata->regions[2].start + 0x1 );
+    status = copy_to_user(buf, &value, 1);      
+    return ( status ? -EFAULT : 1 );
 }
 
 int ioctl_apci(struct inode *inode, struct file *filp, unsigned int cmd, unsigned long arg)
