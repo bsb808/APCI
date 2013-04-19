@@ -1,6 +1,11 @@
 #ifndef APCI_COMMON_H
 #define APCI_COMMON_H
 
+/* The vendor ID for all the PCI cards this driver will support. */
+#define A_VENDOR_ID 0x494F
+#define ACCES_MAJOR  98
+#define ACCES_MAGIC_NUM 0xE0
+
 
 #define APCI_PREFIX "apci: "
 #define APCI "apci"
@@ -13,6 +18,7 @@
 /**
  * Debugging , simplified
  */
+extern int apci_debug_level;
 
 #ifdef A_PCI_DEBUG
 #define apci_debug(fmt,...) pr_debug(APCI_PREFIX fmt, ##__VA_ARGS__ )

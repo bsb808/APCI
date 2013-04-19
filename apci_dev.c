@@ -55,7 +55,7 @@ te_sort(const void *m1, const void *m2)
 
 
 
-#if 1 
+#if 0 
 static struct apci_lookup_table_entry apci_driver_table[] = {
   { PCIe_IIRO_8, 0 , "iiro8" } ,
   { PCI_DIO_24D, 0 , "pci24d" },
@@ -190,7 +190,8 @@ static struct pci_driver pci_driver = {
 /* File Operations */
 static struct file_operations apci_fops = { 
   .read = read_apci,
-  .open = open_apci
+  .open = open_apci,
+  .ioctl = ioctl_apci,
 };
 
 static const int NUM_DEVICES         = 4;
@@ -668,6 +669,8 @@ int probe(struct pci_dev *pdev, const struct pci_device_id *id)
          if (ret) {
               apci_error("Could not allocate irq.");
               goto exit_free;
+         } else {
+              init_waitqueue_head( &(ddata->wait_queue) );
          }
     }
 
