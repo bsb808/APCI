@@ -86,15 +86,6 @@ int ioctl_apci(struct inode *inode, struct file *filp, unsigned int cmd, unsigne
 
           status = copy_from_user(&info, (info_struct *) arg, sizeof(info_struct));
 
-          /* ddata = head; */
-          /* count = 0; */
-          /* while (count < info.device_index) { */
-          /*      if (ddata != NULL) { */
-          /*           ddata = ddata->next; */
-          /*      } */
-          /*      count++; */
-          /* } */
-
           info.dev_id = ddata->dev_id;
 
           for (count = 0; count < 6; count++) {
@@ -173,13 +164,6 @@ int ioctl_apci(struct inode *inode, struct file *filp, unsigned int cmd, unsigne
 
              status = copy_from_user(&io_pack, (iopack *) arg, sizeof(iopack));
              count = 0;
-             /* ddata = head; */
-             /* while (count < io_pack.device_index) { */
-             /*      if (ddata != NULL) { */
-             /*           ddata = ddata->next; */
-             /*      } */
-             /*      count++; */
-             /* } */
 
              if (ddata == NULL) return -ENXIO; /* invalid device index */
 
@@ -261,13 +245,6 @@ int ioctl_apci(struct inode *inode, struct file *filp, unsigned int cmd, unsigne
     case apci_cancel_wait_ioctl:
          apci_info("Cancel wait_for_irq.\n");
          device_index = arg;
-         /* ddata = head; */
-         /* for ( count = 0; count < device_index; count++) { */
-         /*      if (ddata != NULL) { */
-         /*           ddata = ddata->next; */
-         /*      } */
-         /* } */
-         /* if (ddata == NULL) return -ENXIO; /\* invalid device index *\/ */
 
          spin_lock_irqsave(&(ddata->irq_lock), flags);
 
