@@ -19,6 +19,7 @@
 #include <asm/io.h>
 #include <asm/uaccess.h>
 #include <linux/idr.h>
+#include <linux/version.h>
 
 #include "apci_common.h"
 #include "apci_dev.h"
@@ -191,7 +192,11 @@ static struct pci_driver pci_driver = {
 static struct file_operations apci_fops = { 
   .read = read_apci,
   .open = open_apci,
+#if  LINUX_VERSION_CODE < KERNEL_VERSION(2,6,39 )
   .ioctl = ioctl_apci,
+#else
+  .unlocked_ioctl = ioctl_apci,
+#endif
 };
 
 static const int NUM_DEVICES         = 4;
