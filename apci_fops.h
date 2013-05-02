@@ -12,6 +12,7 @@
 #include <linux/spinlock.h>
 #include <linux/interrupt.h>
 #include <linux/sched.h>
+#include <linux/version.h>
 #include <asm/io.h>
 #include <asm/uaccess.h>
 #include "apci_common.h"
@@ -28,6 +29,9 @@
 
 ssize_t read_apci(struct file *f, char __user *buf, size_t len, loff_t *off);
 int open_apci( struct inode *inode, struct file *filp );
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,16,39)
 int ioctl_apci(struct inode *inode, struct file *filp, unsigned int cmd, unsigned long arg);
-
+#else 
+long ioctl_apci(struct file *filp, unsigned int cmd, unsigned long arg);
+#endif
 #endif
