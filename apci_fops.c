@@ -46,7 +46,12 @@ ssize_t read_apci(struct file *filp, char __user *buf,
     return ( status ? -EFAULT : 1 );
 }
 
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,39 )
 int ioctl_apci(struct inode *inode, struct file *filp, unsigned int cmd, unsigned long arg)
+#else 
+long  ioctl_apci(struct file *filp, unsigned int cmd, unsigned long arg)
+#endif
 {
     int count;
     int status;
