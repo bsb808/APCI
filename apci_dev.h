@@ -153,11 +153,15 @@ struct apci_my_info {
      int irq_capable; /* is the card even able to generate irqs? */
      int waiting_for_irq; /* boolean for if the user has requested an IRQ */
      int irq_cancelled; /* boolean for if the user has cancelled the wait */
+
+     /* List of drivers */
      struct list_head driver_list;
-     spinlock_t list_lock;
+     spinlock_t driver_list_lock;
+
      wait_queue_head_t wait_queue;
      spinlock_t irq_lock;
-     struct apci_device_info_structure *next;
+
+  
      struct cdev cdev;
 
      struct pci_dev *pci_dev;

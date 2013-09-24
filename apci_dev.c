@@ -20,6 +20,7 @@
 #include <asm/uaccess.h>
 #include <linux/idr.h>
 #include <linux/version.h>
+#include <linux/list.h>
 
 #include "apci_common.h"
 #include "apci_dev.h"
@@ -29,6 +30,9 @@
 static struct pci_device_id ids[] = {
         { PCI_DEVICE(A_VENDOR_ID, PCIe_IIRO_8), },
         { PCI_DEVICE(A_VENDOR_ID, PCI_DIO_24D), },
+	{ PCI_DEVICE(A_VENDOR_ID, PCI_DA12_4) , },
+	{ PCI_DEVICE(A_VENDOR_ID, PCI_DA12_6) , },
+	{ PCI_DEVICE(A_VENDOR_ID, PCI_DA12_2) , },
         {0,}
 };
 MODULE_DEVICE_TABLE(pci, ids);
@@ -206,7 +210,10 @@ static int major_num;
 
 
 static struct class *class_apci;
+/* struct apci_my_info *head = NULL; */
 struct apci_my_info head;
+
+
 static int dev_counter = 0;
 
 static dev_t apci_first_dev = MKDEV(0,0);
@@ -243,7 +250,7 @@ apci_alloc_driver(struct pci_dev *pdev, const struct pci_device_id *id )
     ddata->dev_id = id->device;
 
     spin_lock_init(&(ddata->irq_lock));
-    ddata->next = NULL;
+    /* ddata->next = NULL; */
 
     if (pci_resource_flags(pdev, 0) & IORESOURCE_IO) {
         plx_bar = 0;
@@ -372,10 +379,10 @@ apci_alloc_driver(struct pci_dev *pdev, const struct pci_device_id *id )
       }
       if (ddata->regions[count].flags & IORESOURCE_IO) {
 
-        apci_debug("requesting io region start=%08x,len=%d", ddata->regions[count].start, ddata->regions[count].length );
+        apci_debug("requesting io region start=%08x,len=%d\n", ddata->regions[count].start, ddata->regions[count].length );
         presource = request_region(ddata->regions[count].start, ddata->regions[count].length, "apci");
       } else {
-        apci_debug("requesting mem region start=%08x,len=%d", ddata->regions[count].start, ddata->regions[count].length );
+        apci_debug("requesting mem region start=%08x,len=%d\n", ddata->regions[count].start, ddata->regions[count].length );
         presource = request_mem_region(ddata->regions[count].start, ddata->regions[count].length, "apci");
         if (presource != NULL) {
           ddata->regions[count].mapped_address = ioremap(ddata->regions[count].start, ddata->regions[count].length);
@@ -421,7 +428,7 @@ apci_free_driver( struct pci_dev *pdev )
 
      apci_devel("Entering free driver.\n");
 
-     apci_debug("releasing memory of %08x , length=%d", ddata->plx_region.start, ddata->plx_region.length );
+     apci_debug("releasing memory of %08x , length=%d\n", ddata->plx_region.start, ddata->plx_region.length );
      release_region( ddata->plx_region.start, ddata->plx_region.length );
 
      for (count = 0; count < 6; count ++) {
@@ -443,7 +450,7 @@ apci_free_driver( struct pci_dev *pdev )
 static void apci_class_dev_unregister(struct apci_my_info *ddata )
 {
      struct apci_lookup_table_entry *obj = &apci_driver_table[ APCI_LOOKUP_ENTRY( (int)ddata->id->device ) ];
-     apci_devel("entering apci_class_dev_register\n");
+     apci_devel("entering apci_class_dev_unregister\n");
 /* ddata->dev = device_create(class_apci, &ddata->pci_dev->dev , apci_first_dev + id, NULL, "apci/%s_%d", obj->name, obj->counter ++ ); */
      
 
@@ -466,6 +473,8 @@ apci_class_dev_register( struct apci_my_info *ddata )
     apci_devel("entering apci_class_dev_register\n");
 
     ddata->dev = device_create(class_apci, &ddata->pci_dev->dev , apci_first_dev + dev_counter, NULL, "apci/%s_%d", obj->name, obj->counter ++ );
+
+    /* add pointer to the list of all ACCES I/O products */
 
     if( IS_ERR( ddata->dev )) {
       apci_error("Error creating device");
@@ -615,15 +624,20 @@ void remove(struct pci_dev *pdev)
 {
      struct apci_my_info *ddata = pci_get_drvdata( pdev );
 
-     apci_devel("entering remove");
+     apci_devel("entering remove\n");
 
      spin_lock(&(ddata->irq_lock));
-     free_irq(pdev->irq, ddata );
+
+     if( ddata->irq_capable ) 
+       free_irq(pdev->irq, ddata );
+
      spin_unlock(&(ddata->irq_lock));
 
      apci_class_dev_unregister( ddata );
 
      cdev_del( &ddata->cdev );
+
+
      apci_free_driver( pdev );
      
      apci_devel("leaving remove");
@@ -635,7 +649,7 @@ int probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
     struct apci_my_info *ddata;
     int ret;
-    apci_devel("entering probe");
+    apci_devel("entering probe\n");
     
     if( pci_enable_device(pdev) ) {
       return -ENODEV;
@@ -650,36 +664,41 @@ int probe(struct pci_dev *pdev, const struct pci_device_id *id)
     ddata->pci_dev   = pdev;
     ddata->id        = id;
     ddata->is_pcie   = ( ddata->plx_region.length >= 0x100 ? 1 : 0 );
-    apci_debug("Is device PCIE : %d", ddata->is_pcie );
+    apci_debug("Is device PCIE : %d\n", ddata->is_pcie );
 
     /* Spin lock init stuff */
 
     
     /* Request Irq */
     if ( ddata->irq_capable ) {
-         apci_error("Requesting Interrupt, %u", (unsigned int)ddata->irq );
+         apci_error("Requesting Interrupt, %u\n", (unsigned int)ddata->irq );
          ret = request_irq((unsigned int) ddata->irq,
-                              apci_interrupt,
-                              IRQF_SHARED ,
-                              "apci",
-                              ddata);
-         switch( id->device ) { 
-         case PCIe_IIRO_8:
-           apci_debug("Found PCIe_IIRO_8");
-           outb( 0x9, ddata->plx_region.start + 0x69 ); 
-         default:
-           apci_debug("Found no device");
-         }
-
-         if (ret) {
-              apci_error("Could not allocate irq.");
-              goto exit_free;
-         } else {
-              init_waitqueue_head( &(ddata->wait_queue) );
-         }
+			   apci_interrupt,
+			   IRQF_SHARED ,
+			   "apci",
+			   ddata);
+	 if ( ret ) {
+	   apci_error("error requesting IRQ %u\n", ddata->irq);
+	   ret = -ENOMEM;
+	   goto exit_free;
+	 }
+         /* switch( id->device ) {  */
+         /* case PCIe_IIRO_8: */
+         /*   apci_debug("Found PCIe_IIRO_8"); */
+         /*   outb( 0x9, ddata->plx_region.start + 0x69 );  */
+         /* default: */
+         /*   apci_debug("Found no device"); */
+         /* } */
+         /* if (ret) { */
+         /*      apci_error("Could not allocate irq."); */
+         /*      goto exit_free; */
+         /* } else { */
+	 init_waitqueue_head( &(ddata->wait_queue) );
+         /* } */
     }
 
-    /* Add to sysfs */
+
+    /* add to sysfs */
 
     cdev_init( &ddata->cdev, &apci_fops );
     ddata->cdev.owner = THIS_MODULE;
@@ -689,6 +708,24 @@ int probe(struct pci_dev *pdev, const struct pci_device_id *id)
       apci_error("error registering Driver %d", dev_counter );
       goto exit_irq;
     }
+
+    /* list_add( &head.driver_list , &ddata->driver_list ); *\/ */
+    spin_lock( &head.driver_list_lock );
+    list_add( &ddata->driver_list , &head.driver_list );
+    spin_unlock( &head.driver_list_lock );
+    /* Needs improved list searching mechanism */
+    /* add to linked list of all of the devices 
+     */
+    /* if ( head == NULL ) { */
+    /*   apci_debug("head = %08x\n", (unsigned int)(ddata)); */
+    /*   head = driver_data; */
+    /* } else { */
+    /*   current_dev = head; */
+    /*   while ( current_dev->next != NULL ) { */
+    /*     current_dev = current_dev->next; */
+    /*   } */
+    /*   current_dev->next = ddata; */
+    /* } */
     
     pci_set_drvdata(pdev, ddata );
     ret = apci_class_dev_register( ddata );
@@ -696,15 +733,16 @@ int probe(struct pci_dev *pdev, const struct pci_device_id *id)
     if ( ret )  
         goto exit_pci_setdrv;
 
-    apci_debug("Added driver %d", dev_counter - 1);
-
+    apci_debug("Added driver %d\n", dev_counter - 1);
+    apci_debug("Value of irq is %d\n", pdev->irq );
     return 0;
 
 exit_pci_setdrv:
     pci_set_drvdata(pdev,NULL);
     cdev_del( &ddata->cdev );
 exit_irq:
-    free_irq(pdev->irq, ddata );
+    if( ddata->irq_capable )
+      free_irq(pdev->irq, ddata );
 exit_free:
     apci_free_driver( pdev );
     return ret;
@@ -718,7 +756,8 @@ apci_init(void)
         int result;
         int ret;
         dev_t dev = MKDEV(0,0);
-        apci_debug("performing init duties");
+        apci_debug("performing init duties\n");
+        spin_lock_init( &head.driver_list_lock);
         INIT_LIST_HEAD( &head.driver_list );
         sort( apci_driver_table, APCI_TABLE_SIZE , APCI_TABLE_ENTRY_SIZE ,te_sort, NULL );
 
@@ -769,7 +808,7 @@ err:
 
 static void __exit apci_exit(void)
 {
-    apci_debug("performing exit duties");
+    apci_debug("performing exit duties\n");
     pci_unregister_driver(&pci_driver);
     cdev_del(&apci_cdev);
     unregister_chrdev_region(MKDEV(major_num,0),1 );

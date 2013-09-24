@@ -12,3 +12,6 @@ all:
 
 clean: 
 	$(MAKE) CC=$(CC) -C $(KDIR) M=$(PWD) clean
+
+install:
+	$(MAKE) CC=$(CC) -C $(KDIR) M=$(PWD) modules_install

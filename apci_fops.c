@@ -66,10 +66,11 @@ long  ioctl_apci(struct file *filp, unsigned int cmd, unsigned long arg)
 
     }
     apci_devel("apci_wait_for_irq_ioctl value is %u\n", (int)apci_wait_for_irq_ioctl );
-    apci_devel("apci_get_base_address value is %u\n", (int)apci_get_base_address );
+    apci_devel("apci_get_base_address value is %x\n", (int)apci_get_base_address );
     apci_devel("inside ioctl.\n");
 
     switch (cmd) {
+        struct apci_my_info *child;
         case apci_get_devices_ioctl:
           apci_debug("entering get_devices\n");
 
@@ -78,12 +79,22 @@ long  ioctl_apci(struct file *filp, unsigned int cmd, unsigned long arg)
           apci_debug("private_data was not null\n");
 
           count = 0;
+
+          list_for_each_entry( child, &head.driver_list , driver_list );
+          /*   count ++; */
+          /* do {  */
+          /*   count ++ ; */
+          /*   apci_devel("Found another device\n"); */
+          /*   driver_data = driver_data->next; */
+          /* } while ( driver_data != NULL ); */
+
           apci_debug("get_devices returning %d\n", count);
 
           return count;
           break;
 
         case apci_get_device_info_ioctl:
+          apci_debug("entering get_device_info \n");
           status = access_ok(VERIFY_WRITE, arg,
                              sizeof(info_struct));
 
