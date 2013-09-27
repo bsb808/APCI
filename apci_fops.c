@@ -80,13 +80,8 @@ long  ioctl_apci(struct file *filp, unsigned int cmd, unsigned long arg)
 
           count = 0;
 
-          list_for_each_entry( child, &head.driver_list , driver_list );
-          /*   count ++; */
-          /* do {  */
-          /*   count ++ ; */
-          /*   apci_devel("Found another device\n"); */
-          /*   driver_data = driver_data->next; */
-          /* } while ( driver_data != NULL ); */
+          list_for_each_entry( child, &head.driver_list , driver_list )
+            count ++;
 
           apci_debug("get_devices returning %d\n", count);
 
@@ -138,14 +133,17 @@ long  ioctl_apci(struct file *filp, unsigned int cmd, unsigned long arg)
 
               switch (io_pack.size) {
                 case BYTE:
+                  apci_devel("writing byte to %X\n", ddata->regions[io_pack.bar].start + io_pack.offset);
                   outb(io_pack.data, ddata->regions[io_pack.bar].start + io_pack.offset);
                   break;
 
                 case WORD:
+                  apci_devel("writing word to %X\n", ddata->regions[io_pack.bar].start + io_pack.offset);
                   outw(io_pack.data, ddata->regions[io_pack.bar].start + io_pack.offset);
                   break;
 
                 case DWORD:
+                  apci_devel("writing dword to %X\n", ddata->regions[io_pack.bar].start + io_pack.offset);
                   outl(io_pack.data, ddata->regions[io_pack.bar].start + io_pack.offset);
                   break;
               };
@@ -185,7 +183,7 @@ long  ioctl_apci(struct file *filp, unsigned int cmd, unsigned long arg)
 
              switch (is_valid_addr(ddata, io_pack.bar, io_pack.offset)) {
              case IO:
-                  switch(io_pack.size) {
+                  switch (io_pack.size) {
                   case BYTE:
                        io_pack.data = inb(ddata->regions[io_pack.bar].start + io_pack.offset);
                        break;
@@ -201,7 +199,7 @@ long  ioctl_apci(struct file *filp, unsigned int cmd, unsigned long arg)
                   break;
 
              case MEM:
-                  switch(io_pack.size) {
+                  switch (io_pack.size) {
                   case BYTE:
                        io_pack.data = ioread8(ddata->regions[io_pack.bar].mapped_address + io_pack.offset);
                        break;

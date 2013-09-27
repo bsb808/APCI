@@ -623,7 +623,8 @@ irqreturn_t apci_interrupt(int irq, void *dev_id)
 void remove(struct pci_dev *pdev)
 {
      struct apci_my_info *ddata = pci_get_drvdata( pdev );
-
+     struct apci_my_info *child;
+     struct apci_my_info *_temp;
      apci_devel("entering remove\n");
 
      spin_lock(&(ddata->irq_lock));
@@ -637,6 +638,14 @@ void remove(struct pci_dev *pdev)
 
      cdev_del( &ddata->cdev );
 
+     spin_lock( &head.driver_list_lock );
+     list_for_each_entry_safe( child , _temp,  &head.driver_list , driver_list ) {
+       if( child == ddata ) {
+         apci_debug("Removing node with address %p\n", child );
+         list_del( &child->driver_list );
+       }
+     }
+     spin_unlock( &head.driver_list_lock );
 
      apci_free_driver( pdev );
      
@@ -644,10 +653,15 @@ void remove(struct pci_dev *pdev)
 }
 
 
-
+/*
+ * @note Adds the driver to the list of all ACCES I/O Drivers
+ * that are supported by this driver
+ */ 
 int probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
     struct apci_my_info *ddata;
+    struct apci_my_info *_temp;
+    struct apci_my_info *child;
     int ret;
     apci_devel("entering probe\n");
     
@@ -709,24 +723,11 @@ int probe(struct pci_dev *pdev, const struct pci_device_id *id)
       goto exit_irq;
     }
 
-    /* list_add( &head.driver_list , &ddata->driver_list ); *\/ */
+    /* add to the list of devices supported */
     spin_lock( &head.driver_list_lock );
     list_add( &ddata->driver_list , &head.driver_list );
     spin_unlock( &head.driver_list_lock );
-    /* Needs improved list searching mechanism */
-    /* add to linked list of all of the devices 
-     */
-    /* if ( head == NULL ) { */
-    /*   apci_debug("head = %08x\n", (unsigned int)(ddata)); */
-    /*   head = driver_data; */
-    /* } else { */
-    /*   current_dev = head; */
-    /*   while ( current_dev->next != NULL ) { */
-    /*     current_dev = current_dev->next; */
-    /*   } */
-    /*   current_dev->next = ddata; */
-    /* } */
-    
+   
     pci_set_drvdata(pdev, ddata );
     ret = apci_class_dev_register( ddata );
 
@@ -738,6 +739,15 @@ int probe(struct pci_dev *pdev, const struct pci_device_id *id)
     return 0;
 
 exit_pci_setdrv:
+    /* Routine to remove the driver from the list */
+    spin_lock( &head.driver_list_lock );
+    list_for_each_entry_safe( child , _temp,  &head.driver_list , driver_list ) {
+      if( child == ddata ) {
+        apci_debug("Would delete address %p\n", child );
+      }
+    }
+    spin_unlock( &head.driver_list_lock );
+      
     pci_set_drvdata(pdev,NULL);
     cdev_del( &ddata->cdev );
 exit_irq:
