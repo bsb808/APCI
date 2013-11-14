@@ -125,7 +125,6 @@
 #define NAME_PCI_WDG_IMPAC              "pci_wdg_impac"
 
 
-enum SIZE         {BYTE = 0, WORD, DWORD};
 enum ADDRESS_TYPE {INVALID = 0, IO, MEM};
 typedef enum ADDRESS_TYPE address_type;
 
@@ -172,25 +171,6 @@ struct apci_my_info {
 
      struct device *dev;
 };
-
-typedef struct {
-	unsigned long device_index;
-	int dev_id;
-	/* Most likely only base_addresses[2] will be useful.
-	 * Consult your product manual for more information.
-	 */
-	unsigned long base_addresses[6];
-} info_struct;
-
-
-typedef struct {
-	unsigned long device_index;
-	int bar;
-	unsigned int offset;
-	enum SIZE size;
-	__u32 data;
-} iopack;
-
 
 int probe(struct pci_dev *dev, const struct pci_device_id *id);
 void remove(struct pci_dev *dev);
