@@ -26,6 +26,11 @@
 #include "apci_dev.h"
 #include "apci_fops.h"
 
+#ifndef __devinit
+#define __devinit
+#define __devinitdata
+#endif
+
 /* PCI table construction */
 static struct pci_device_id ids[] = {
         { PCI_DEVICE(A_VENDOR_ID, PCIe_IIRO_8), },
