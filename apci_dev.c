@@ -683,7 +683,7 @@ void remove(struct pci_dev *pdev)
 
      apci_free_driver( pdev );
      
-     apci_devel("leaving remove");
+     apci_devel("leaving remove\n");
 }
 
 
@@ -719,7 +719,7 @@ int probe(struct pci_dev *pdev, const struct pci_device_id *id)
     
     /* Request Irq */
     if ( ddata->irq_capable ) {
-         apci_error("Requesting Interrupt, %u\n", (unsigned int)ddata->irq );
+         apci_debug("Requesting Interrupt, %u\n", (unsigned int)ddata->irq );
          ret = request_irq((unsigned int) ddata->irq,
 			   apci_interrupt,
 			   IRQF_SHARED ,
