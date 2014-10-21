@@ -64,6 +64,8 @@ static struct pci_device_id ids[] = {
         { PCI_DEVICE(A_VENDOR_ID, PCIe_DIO_48     ), },
         { PCI_DEVICE(A_VENDOR_ID, PCIe_DIO_48S    ), },
         { PCI_DEVICE(A_VENDOR_ID, PCIe_IIRO_16    ), },
+        { PCI_DEVICE(A_VENDOR_ID, PCI_IIRO_16     ), },
+        { PCI_DEVICE(A_VENDOR_ID, PCI_IIRO_8      ), },
         { PCI_DEVICE(A_VENDOR_ID, PCIe_IIRO_8     ), },
         {0,}
 };
@@ -524,8 +526,6 @@ irqreturn_t apci_interrupt(int irq, void *dev_id)
     struct apci_my_info  *ddata;
     __u8  byte;
 
-    apci_devel("ISR called.\n");    
-
     ddata = (struct apci_my_info *) dev_id;
 
     /* The first thing we do is check to see if the card is causing an IRQ.
@@ -546,6 +546,8 @@ irqreturn_t apci_interrupt(int irq, void *dev_id)
         return IRQ_NONE; /* not me */
       }
     }
+
+    apci_devel("ISR called.\n");
     
     /* Handle interrupt based on the device ID for the board. */
     switch (ddata->dev_id) {
