@@ -1,6 +1,6 @@
 /*
 This software is a driver for ACCES I/O Products, Inc. PCI cards.
-Copyright (C) 2007  ACCES I/O Products, Inc.
+Copyright (C) 2015  ACCES I/O Products, Inc.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -23,133 +23,193 @@ For more information please contact the ACCES software department at
 
 #include <sys/ioctl.h>
 #include <linux/errno.h>
+#include <stddef.h>
+#include <sys/io.h>
 
 #include "apcilib.h"
-#include "apci.h"
+
 
 int apci_get_devices(int fd)
 {
-	return ioctl(fd, apci_get_devices_ioctl);
+    return ioctl(fd, apci_get_devices_ioctl);
 }
 
 int apci_get_device_info(int fd, unsigned long device_index, unsigned int *dev_id, unsigned long base_addresses[6])
 {
-	info_struct dev_info;
-	int count;
-	int status;
+    info_struct dev_info;
+    int count;
+    int status;
 
-	dev_info.device_index = device_index;
+    dev_info.device_index = device_index;
 
-	status = ioctl(fd, apci_get_device_info_ioctl, &dev_info);
+    status = ioctl(fd, apci_get_device_info_ioctl, &dev_info);
 	
-	if (dev_id != NULL) *dev_id = dev_info.dev_id;
+    if (dev_id != NULL) *dev_id = dev_info.dev_id;
 	
-	if (base_addresses != NULL)
+    if (base_addresses != NULL)
 	for (count = 0; count < 6; count ++) base_addresses[count] = dev_info.base_addresses[count];
 	
-	return status;
+    return status;
 
 }
 
 int apci_write8(int fd, unsigned long device_index, int bar, int offset, __u8 data)
 {
-	iopack io_pack;
+    iopack io_pack;
 	
-	io_pack.device_index = device_index;
-	io_pack.bar = bar;
-	io_pack.offset = offset;
-	io_pack.data = data;
-	io_pack.size = BYTE;
+    io_pack.device_index = device_index;
+    io_pack.bar = bar;
+    io_pack.offset = offset;
+    io_pack.data = data;
+    io_pack.size = BYTE;
 	
-	return ioctl(fd, apci_write_ioctl, &io_pack);
+    return ioctl(fd, apci_write_ioctl, &io_pack);
+}
 
+unsigned char inport( int base ) 
+{
+    return (inb(base));
+}
+
+unsigned short inportb( int base )
+{
+    return inw( base );
+}
+
+int inportdw( int base )
+{
+    return inl( base );
+}
+
+int inportl( int base )
+{
+    return inl( base );
+}
+
+unsigned char RelInportB( int fd, int offset )
+{
+    /* get the base address */
+    int base;
+    return inportb( base );
+}
+
+unsigned short RelInport( int fd, int offset )
+{
+    int base;
+    return inport( base );
+}
+
+unsigned int RelInportDW( int fd, int offset )
+{
+    int base;
+    return inportdw( base );
+}
+
+unsigned int RelInportL( int fd, int offset )
+{
+    return RelInportDW( fd, offset );
+}
+
+int apci_get_base_address( int fd )
+{
+    iopack io_pack;
+    int bar, offset, data;
+    int device_index;
+    
+    io_pack.device_index = device_index;
+    io_pack.bar = bar;
+    io_pack.offset = offset;
+    io_pack.data = data;
+    io_pack.size = WORD;
+
+    ioctl( fd, apci_get_device_info_ioctl, io_pack );
 }
 
 int apci_write16(int fd, unsigned long device_index, int bar, int offset, __u16 data)
 {
-	iopack io_pack;
+    iopack io_pack;
 	
-	io_pack.device_index = device_index;
-	io_pack.bar = bar;
-	io_pack.offset = offset;
-	io_pack.data = data;
-	io_pack.size = WORD;
+    io_pack.device_index = device_index;
+    io_pack.bar = bar;
+    io_pack.offset = offset;
+    io_pack.data = data;
+    io_pack.size = WORD;
 	
-	return ioctl(fd, apci_write_ioctl, &io_pack);
+    return ioctl(fd, apci_write_ioctl, &io_pack);
 }
 
 int apci_write32(int fd, unsigned long device_index, int bar, int offset, __u32 data)
 {
-	iopack io_pack;
+    iopack io_pack;
 	
-	io_pack.device_index = device_index;
-	io_pack.bar = bar;
-	io_pack.offset = offset;
-	io_pack.data = data;
-	io_pack.size = DWORD;
+    io_pack.device_index = device_index;
+    io_pack.bar = bar;
+    io_pack.offset = offset;
+    io_pack.data = data;
+    io_pack.size = DWORD;
 	
-	return ioctl(fd, apci_write_ioctl, &io_pack);
+    return ioctl(fd, apci_write_ioctl, &io_pack);
 }
 
 int apci_read8(int fd, unsigned long device_index, int bar, int offset, __u8 *data)
 {
-	iopack io_pack;
-	int status;
+    iopack io_pack;
+    int status;
 
-	io_pack.device_index = device_index;
-	io_pack.bar = bar;
-	io_pack.offset = offset;
-	io_pack.size = BYTE;
+    io_pack.device_index = device_index;
+    io_pack.bar = bar;
+    io_pack.offset = offset;
+    io_pack.size = BYTE;
 	
-	status = ioctl(fd, apci_read_ioctl, &io_pack);
+    status = ioctl(fd, apci_read_ioctl, &io_pack);
 	
-	if (data != NULL) *data = io_pack.data;
+    if (data != NULL) *data = io_pack.data;
 	
-	return status;
+    return status;
 	
 	
 }
 
 int apci_read16(int fd, unsigned long device_index, int bar, int offset, __u16 *data)
 {
-	iopack io_pack;
-	int status;
+    iopack io_pack;
+    int status;
 
-	io_pack.device_index = device_index;
-	io_pack.bar = bar;
-	io_pack.offset = offset;
-	io_pack.size = WORD;
+    io_pack.device_index = device_index;
+    io_pack.bar = bar;
+    io_pack.offset = offset;
+    io_pack.size = WORD;
 	
-	status = ioctl(fd, apci_read_ioctl, &io_pack);
+    status = ioctl(fd, apci_read_ioctl, &io_pack);
 	
-	if (data != NULL) *data = io_pack.data;
+    if (data != NULL) *data = io_pack.data;
 	
-	return status;
+    return status;
 }
 
 int apci_read32(int fd, unsigned long device_index, int bar, int offset, __u32 *data)
 {
-	iopack io_pack;
-	int status;
+    iopack io_pack;
+    int status;
 
-	io_pack.device_index = device_index;
-	io_pack.bar = bar;
-	io_pack.offset = offset;
-	io_pack.size = DWORD;
+    io_pack.device_index = device_index;
+    io_pack.bar = bar;
+    io_pack.offset = offset;
+    io_pack.size = DWORD;
 	
-	status = ioctl(fd, apci_read_ioctl, &io_pack);
+    status = ioctl(fd, apci_read_ioctl, &io_pack);
 	
-	if (data != NULL) *data = io_pack.data;
+    if (data != NULL) *data = io_pack.data;
 	
-	return status;
+    return status;
 
 }
 
 int apci_wait_for_irq(int fd, unsigned long device_index)
 {
-	return ioctl(fd, apci_wait_for_irq_ioctl, device_index);
+    return ioctl(fd, apci_wait_for_irq_ioctl, device_index);
 }
 int apci_cancel_irq(int fd, unsigned long device_index)
 {
-	return ioctl(fd, apci_cancel_wait_ioctl, device_index);
+    return ioctl(fd, apci_cancel_wait_ioctl, device_index);
 }

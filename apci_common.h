@@ -3,6 +3,7 @@
 
 /* The vendor ID for all the PCI cards this driver will support. */
 #define A_VENDOR_ID 0x494F
+#define TEST_VENDORI_ID 0xFF00
 #define ACCES_MAJOR  98
 #define ACCES_MAGIC_NUM 0xE0
 

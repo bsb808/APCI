@@ -22,8 +22,23 @@ For more information please contact the ACCES software department at
 */
 
 #include <linux/types.h>
+#include <apci.h>
+
+
+unsigned char inport( int base );
+unsigned short inportb( int base );
+int inportdw( int base );
+int inportl( int base );
+
+unsigned char RelInportB( int fd, int offset );
+unsigned short RelInport( int fd, int offset );
+unsigned int RelInportDW( int fd, int offset );
+unsigned int RelInportL( int fd, int offset );
+
+
 
 int apci_get_devices(int fd);
+int apci_get_base_address( int fd );
 
 int apci_get_device_info(int fd, unsigned long device_index, unsigned int *dev_id, unsigned long base_addresses[6]);
 

@@ -67,6 +67,7 @@ static struct pci_device_id ids[] = {
         { PCI_DEVICE(A_VENDOR_ID, PCI_IIRO_16     ), },
         { PCI_DEVICE(A_VENDOR_ID, PCI_IIRO_8      ), },
         { PCI_DEVICE(A_VENDOR_ID, PCIe_IIRO_8     ), },
+        { PCI_DEVICE(A_VENDOR_ID, PCIe_IDIO_24S   ), },
         {0,}
 };
 MODULE_DEVICE_TABLE(pci, ids);
@@ -162,6 +163,7 @@ static struct apci_lookup_table_entry apci_driver_table[] = \
                          APCI_MAKE_ENTRY( PCI_IIRO_16 ),
                          APCI_MAKE_ENTRY( PCI_IDI_48 ),
                          APCI_MAKE_ENTRY( PCI_IDO_48 ),
+                         APCI_MAKE_ENTRY( PCIe_IDIO_24S ),
                          APCI_MAKE_ENTRY( PCI_IDIO_16 ),
                          APCI_MAKE_ENTRY( PCI_WDG_2S ),
                          APCI_MAKE_ENTRY( PCI_WDG_CSM ),
@@ -333,6 +335,7 @@ apci_alloc_driver(struct pci_dev *pdev, const struct pci_device_id *id )
          case PCIe_DIO_48S:
          case PCIe_IIRO_8:
          case PCIe_IIRO_16:
+         case PCIe_IDIO_24S:
          case PCI_DIO_24H:
          case PCI_DIO_24D:
          case PCI_DIO_24H_C:

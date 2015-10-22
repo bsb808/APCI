@@ -59,7 +59,7 @@ int main (void)
 		
 		for (inner = 0; inner < 6; inner++)
 		{
-			printf("BAR[%d]:%X\n", inner, addresses[inner]);
+                    printf("BAR[%d]:%X\n", (int)inner, (int)addresses[inner]);
 		}
 		
 		fflush(stdout);
