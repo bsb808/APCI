@@ -35,6 +35,9 @@
 #define PCIe_DIO_24DCS	0x0E56
 #define PCIe_DIO_48	0x0C61
 #define PCIe_DIO_48S	0x0E61
+#define PCIe_DIO_72     0x0C6A 
+#define PCIe_DIO_96     0x0C71
+#define PCIe_DIO_120    0x0C79
 #define PCIe_IIRO_8	0x0F02
 #define PCIe_IIRO_16	0x0F09
 #define PCI_DIO_24H	0x0C50
@@ -84,6 +87,10 @@
 #define NAME_PCIe_DIO_24DCS             "pcie_dio_24dcs"
 #define NAME_PCIe_DIO_48                "pcie_dio_48"
 #define NAME_PCIe_DIO_48S               "pcie_dio_48s"
+#define NAME_PCIe_DIO_72                "pcie_dio_72"
+#define NAME_PCIe_DIO_96                "pcie_dio_96"  
+#define NAME_PCIe_DIO_120               "pcie_dio_120"  
+
 #define NAME_PCIe_IIRO_8                "pcie_iiro_8"
 #define NAME_PCIe_IIRO_16               "pcie_iiro_16"
 #define NAME_PCI_DIO_24H                "pci_dio_24h"
