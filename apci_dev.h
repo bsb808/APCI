@@ -77,6 +77,7 @@
 #define PCI_WDG_2S	0x1250 //TODO: Find out if the Watch Dog Cards should really be here
 #define PCI_WDG_CSM	0x22C0
 #define PCI_WDG_IMPAC	0x12D0
+#define MPCIE_DIO_24S   0x0E57
 
 /* names for the drivers we create */
 #define NAME_PCIe_DIO_24                "pcie_dio_24"
@@ -130,7 +131,7 @@
 #define NAME_PCI_WDG_2S                 "pci_wdg_2s"
 #define NAME_PCI_WDG_CSM                "pci_wdg_csm"
 #define NAME_PCI_WDG_IMPAC              "pci_wdg_impac"
-
+#define NAME_MPCIE_DIO_24S               "mpcie_dio_24s"
 
 enum ADDRESS_TYPE {INVALID = 0, IO, MEM};
 typedef enum ADDRESS_TYPE address_type;

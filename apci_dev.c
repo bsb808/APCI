@@ -67,6 +67,7 @@ static struct pci_device_id ids[] = {
         { PCI_DEVICE(A_VENDOR_ID, PCI_IIRO_16     ), },
         { PCI_DEVICE(A_VENDOR_ID, PCI_IIRO_8      ), },
         { PCI_DEVICE(A_VENDOR_ID, PCIe_IIRO_8     ), },
+        { PCI_DEVICE(A_VENDOR_ID, MPCIE_DIO_24S   ), },
         {0,}
 };
 MODULE_DEVICE_TABLE(pci, ids);
@@ -165,7 +166,9 @@ static struct apci_lookup_table_entry apci_driver_table[] = \
                          APCI_MAKE_ENTRY( PCI_IDIO_16 ),
                          APCI_MAKE_ENTRY( PCI_WDG_2S ),
                          APCI_MAKE_ENTRY( PCI_WDG_CSM ),
-                         APCI_MAKE_ENTRY( PCI_WDG_IMPAC ), );
+                         APCI_MAKE_ENTRY( PCI_WDG_IMPAC ), 
+                         APCI_MAKE_ENTRY( MPCIE_DIO_24S ), 
+                          );
 
 #define APCI_TABLE_SIZE  sizeof(apci_driver_table)/sizeof(struct apci_lookup_table_entry)
 #define APCI_TABLE_ENTRY_SIZE sizeof( struct apci_lookup_table_entry )
