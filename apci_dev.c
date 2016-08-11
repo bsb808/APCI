@@ -329,6 +329,7 @@ apci_alloc_driver(struct pci_dev *pdev, const struct pci_device_id *id )
          case PCIe_DIO_24:/* group1 */
          case PCIe_DIO_24D:
          case PCIe_DIO_24S:
+         case MPCIE_DIO_24S:
          case PCIe_DIO_24DS:
          case PCIe_DIO_24DC:
          case PCIe_DIO_24DCS:
