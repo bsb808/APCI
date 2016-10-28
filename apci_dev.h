@@ -77,7 +77,7 @@
 #define PCI_WDG_2S	0x1250 //TODO: Find out if the Watch Dog Cards should really be here
 #define PCI_WDG_CSM	0x22C0
 #define PCI_WDG_IMPAC	0x12D0
-#define MPCIE_DIO_24S   0x0E57
+#define MPCIE_DIO_24S   0x0100
 
 /* names for the drivers we create */
 #define NAME_PCIe_DIO_24                "pcie_dio_24"
