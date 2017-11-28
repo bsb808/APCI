@@ -21,8 +21,11 @@ For more information please contact the ACCES software department at
 (800)-326-1649 or visit www.accesio.com
 */
 
+#define NULL (void *)0
+
 #include <sys/ioctl.h>
 #include <linux/errno.h>
+#include <errno.h>
 
 #include "apcilib.h"
 #include "apci.h"
@@ -102,10 +105,10 @@ int apci_read8(int fd, unsigned long device_index, int bar, int offset, __u8 *da
 	io_pack.size = BYTE;
 	
 	status = ioctl(fd, apci_read_ioctl, &io_pack);
-	
+	int errsv = errno;
+
 	if (data != NULL) *data = io_pack.data;
-	
-	return status;
+	return errsv; //status;
 	
 	
 }
