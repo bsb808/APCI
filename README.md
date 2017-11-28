@@ -2,7 +2,7 @@
 
 Fork of https://github.com/accesio/APCI
 
-## Installation - specific for Ubuntu 16.04 running on PC104 board
+## Installation - specific for Ubuntu 16.04 running on ADL PC104 with Access I/O 4-port relay board
 
 1. Install your default headers  `sudo apt-get install linux-headers-$(uname -r)`
 2. Verify that they were installed. They should exist under `/usr/src/linux-headers-$(uname -r )`
