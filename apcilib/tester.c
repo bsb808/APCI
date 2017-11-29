@@ -30,6 +30,8 @@ For more information please contact the ACCES software department at
 
 #include "apcilib.h"
 
+#include <stdint.h>
+#include <errno.h>
 int fd;
 
 
@@ -66,6 +68,23 @@ int main (void)
 		
 	}
 	
+	
+	// Read
+	uint8_t data = 0;
+	int rslt;
+	int errsv;
+	rslt = apci_read8(fd,0,2,0,&data);
+	errsv == errno;
+	printf("Read: result=%d, data=0x%d error=%d \n",rslt,data,errsv);
+	printf("EBADF: %d, %d, %d, %d\n",EBADF,EFAULT,EINVAL,ENOTTY);
+
+	data = 0;
+	rslt = apci_write8(fd,0,2,0,data);
+	printf("Read: result=%d, data=0x%x error=%d \n",rslt,data,errsv);
+	rslt = apci_read8(fd,0,2,0,&data);
+	errsv == errno;
+	printf("Read: result=%d, data=0x%x error=%d \n",rslt,data,errsv);
+
 	close(fd);
 }
 
@@ -73,7 +92,8 @@ int open_dev_file()
 {
 	int fd;
 
-	fd = open("/dev/apci", O_RDONLY);
+	//fd = open("/dev/apci/", O_RDONLY);
+	fd = open("/dev/apci/mpcie_dio_24s_0", O_RDONLY);
 
 	if (fd < 0)
 	{
