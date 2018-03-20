@@ -18,6 +18,7 @@
 #include <linux/sysfs.h>
 #include <linux/types.h>
 #include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <linux/version.h>
 
 #include "apci_common.h"

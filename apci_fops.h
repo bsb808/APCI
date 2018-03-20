@@ -5,6 +5,8 @@
 #include <linux/kernel.h>
 #include <linux/sched.h>
 #include <linux/version.h>
+#include <linux/fs.h>     /* inode */
+#include <asm/uaccess.h>  /* copy_*_user */
 #include <asm/io.h>
 #include "apci_common.h"
 #include "apci_ioctl.h"
